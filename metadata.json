@@ -1,0 +1,7 @@
+{
+  "name": "OpsLink Pro - Operations Management",
+  "description": "A comprehensive dashboard for Tour Managers and Owners to manage tours, fleets, floats, expenses, and vehicle issues with real-time tracking and role-based access control.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
