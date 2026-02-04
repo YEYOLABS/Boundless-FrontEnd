@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+import './index.css';
 import App from './App.tsx';
 
 // Removed manual process.env polyfill to comply with Gemini API coding guidelines.
