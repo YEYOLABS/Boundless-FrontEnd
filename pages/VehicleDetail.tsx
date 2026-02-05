@@ -9,13 +9,15 @@ import { ArrowLeft, Truck, Calendar, Map, AlertCircle, Clipboard, Info, User, Sh
 import { useFetch } from '../hooks/useFetch';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
+import { useNotification } from '../contexts/NotificationContext';
 
 const VehicleDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showNotification, showConfirm } = useNotification();
   const [activeTab, setActiveTab] = useState<'info' | 'tours' | 'issues' | 'maintenance' | 'inspections'>('info');
-  
+
   const vehicleFetch = useFetch<Vehicle>();
   const toursFetch = useFetch<Tour[]>();
   const issuesFetch = useFetch<Issue[]>();
@@ -64,23 +66,25 @@ const VehicleDetail: React.FC = () => {
 
   const handleDelete = async () => {
     if (!id || !canWrite) return;
-    if (!confirm('CRITICAL ACTION: Are you sure you want to decommission and remove this vehicle from the fleet? This action is permanent.')) return;
-    try {
-      await api.deleteVehicle(id);
-      navigate('/vehicles');
-    } catch (err) {
-      alert('Failed to delete asset: ' + err);
-    }
+    showConfirm('CRITICAL ACTION: Are you sure you want to decommission and remove this vehicle from the fleet? This action is permanent.', async () => {
+      try {
+        await api.deleteVehicle(id);
+        navigate('/vehicles');
+        showNotification('Asset successfully decommissioned.', 'success');
+      } catch (err) {
+        showNotification('Failed to delete asset: ' + err, 'error');
+      }
+    }, 'Decommission Asset');
   };
 
   const handleUpdateMaintenance = async () => {
     if (!id || !canWrite) return;
     try {
       await api.updateVehicle(id, { vehicleMaintenanceIntervalsKm: maintenanceIntervals });
-      alert('Maintenance intervals updated successfully');
+      showNotification('Maintenance intervals updated successfully', 'success');
       loadAllData(); // Reload to get updated data
     } catch (err) {
-      alert('Failed to update maintenance intervals: ' + err);
+      showNotification('Failed to update maintenance intervals: ' + err, 'error');
     }
   };
 
@@ -99,7 +103,7 @@ const VehicleDetail: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6 animate-fadeIn">
       <div className="flex justify-between items-center">
-        <button 
+        <button
           onClick={() => navigate('/vehicles')}
           className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors font-bold text-sm uppercase tracking-widest"
         >
@@ -107,7 +111,7 @@ const VehicleDetail: React.FC = () => {
           Back to Fleet
         </button>
         {canWrite && (
-          <button 
+          <button
             onClick={handleDelete}
             className="flex items-center gap-2 text-rose-500 hover:text-rose-700 hover:bg-rose-50 px-4 py-2 rounded-xl transition-all font-bold text-xs uppercase tracking-widest"
           >
@@ -152,8 +156,8 @@ const VehicleDetail: React.FC = () => {
               onClick={() => setActiveTab(tab.id as any)}
               className={`
                 px-8 py-5 flex items-center gap-2 border-b-4 font-bold text-xs uppercase tracking-widest transition-all whitespace-nowrap
-                ${activeTab === tab.id 
-                  ? 'border-indigo-600 text-indigo-600' 
+                ${activeTab === tab.id
+                  ? 'border-indigo-600 text-indigo-600'
                   : 'border-transparent text-slate-400 hover:text-slate-600'}
               `}
             >
@@ -210,22 +214,22 @@ const VehicleDetail: React.FC = () => {
                 </div>
 
                 <div className="lg:col-span-2 space-y-8">
-                   <div>
-                      {/* <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Technical Specification</h4> */}
-                      <div className="grid grid-cols-2 gap-4">
-                         {[
-                           { label: 'Licence Plate', val: vehicle.licenceNumber },
-                          //  { label: 'Asset ID', val: vehicle.id.slice(0, 12) },
-                           { label: 'Trailer', val: vehicle.trailerLicence || 'N/A' },
-                          //  { label: 'Created At', val: new Date(vehicle.createdAt || '').toLocaleDateString() },
-                         ].map((spec, i) => (
-                           <div key={i} className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{spec.label}</p>
-                             <p className="text-sm font-black text-slate-800 tracking-tight">{spec.val}</p>
-                           </div>
-                         ))}
-                      </div>
-                   </div>
+                  <div>
+                    {/* <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Technical Specification</h4> */}
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { label: 'Licence Plate', val: vehicle.licenceNumber },
+                        //  { label: 'Asset ID', val: vehicle.id.slice(0, 12) },
+                        { label: 'Trailer', val: vehicle.trailerLicence || 'N/A' },
+                        //  { label: 'Created At', val: new Date(vehicle.createdAt || '').toLocaleDateString() },
+                      ].map((spec, i) => (
+                        <div key={i} className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                          <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{spec.label}</p>
+                          <p className="text-sm font-black text-slate-800 tracking-tight">{spec.val}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -293,9 +297,9 @@ const VehicleDetail: React.FC = () => {
               ) : (
                 <div className="grid grid-cols-1 gap-4">
                   {toursFetch.data?.map((tour) => (
-                    <div 
-                      key={tour.id} 
-                      onClick={() => navigate(`/tours/${tour.id}`)} 
+                    <div
+                      key={tour.id}
+                      onClick={() => navigate(`/tours/${tour.id}`)}
                       className="bg-slate-50 p-2 rounded-[1rem] border border-slate-100 hover:bg-white hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col md:flex-row md:items-center justify-between gap-6"
                     >
                       <div className="flex items-center gap-2">
@@ -390,7 +394,7 @@ const VehicleDetail: React.FC = () => {
                       <input
                         type="number"
                         value={value}
-                        onChange={e => setMaintenanceIntervals({...maintenanceIntervals, [key]: parseInt(e.target.value) || 0})}
+                        onChange={e => setMaintenanceIntervals({ ...maintenanceIntervals, [key]: parseInt(e.target.value) || 0 })}
                         className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold"
                         disabled={!canWrite}
                       />

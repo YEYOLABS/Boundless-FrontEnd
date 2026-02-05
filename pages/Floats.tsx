@@ -7,9 +7,11 @@ import { Plus, Wallet, ShieldCheck, X } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
 import { useFetch } from '../hooks/useFetch';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Floats: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showNotification, showConfirm } = useNotification();
   const { data: floats, loading, request } = useFetch<Float[]>();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newFloat, setNewFloat] = useState({
@@ -34,25 +36,29 @@ const Floats: React.FC = () => {
   const handleIssue = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!canWrite) return;
-    if (!confirm(`Are you absolutely sure you want to issue a float of R${newFloat.amount}?`)) return;
-    try {
-      await request('/floats', { method: 'POST', data: newFloat });
-      setIsModalOpen(false);
-      loadFloats();
-    } catch (err) {
-      alert('Failed to issue float');
-    }
+    showConfirm(`Are you absolutely sure you want to issue a float of R${newFloat.amount}?`, async () => {
+      try {
+        await request('/floats', { method: 'POST', data: newFloat });
+        setIsModalOpen(false);
+        loadFloats();
+        showNotification('Float issued successfully.', 'success');
+      } catch (err) {
+        showNotification('Failed to issue float', 'error');
+      }
+    }, 'Issue Float');
   };
 
   const handleClose = async (id: string) => {
     if (!canWrite) return;
-    if (!confirm('Close this float? All linked expenses should be submitted.')) return;
-    try {
-      await api.closeFloat(id);
-      loadFloats();
-    } catch (err) {
-      alert('Failed to close float');
-    }
+    showConfirm('Close this float? All linked expenses should be submitted.', async () => {
+      try {
+        await api.closeFloat(id);
+        loadFloats();
+        showNotification('Float closed and accounted for.', 'success');
+      } catch (err) {
+        showNotification('Failed to close float', 'error');
+      }
+    }, 'Settle Float');
   };
 
   return (

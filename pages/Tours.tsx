@@ -3,7 +3,8 @@ import { Tour, TourStatus, Vehicle, Driver, Float } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import {
   Plus, X, Upload, Check, FileText, Calendar,
-  MapPin, Truck, User, Globe, Hash, Info, Briefcase, Search, Filter, Wallet, CheckCircle
+  MapPin, Truck, User, Globe, Hash, Info, Briefcase, Search, Filter, Wallet, CheckCircle,
+  Zap, AlertCircle, Sparkles
 } from 'lucide-react';
 import { useFetch } from '../hooks/useFetch';
 import { useSelector } from 'react-redux';
@@ -11,6 +12,8 @@ import { RootState } from '../store/store';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import * as XLSX from 'xlsx';
+import NotificationModal from '../components/NotificationModal';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Tours: React.FC = () => {
   const navigate = useNavigate();
@@ -29,6 +32,7 @@ const Tours: React.FC = () => {
   const [importStatus, setImportStatus] = useState<{ valid: number, total: number, data: any[] } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const { showNotification } = useNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAllTours, setShowAllTours] = useState(false);
   const [reportSearchTerm, setReportSearchTerm] = useState('');
@@ -78,20 +82,55 @@ const Tours: React.FC = () => {
     return d?.name || 'Unassigned Operator';
   };
 
-  const parseDate = (dateStr: string) => {
+  const flexibleParseDate = (value: any): string => {
+    if (!value) return '';
+
+    // Handle Excel serial numbers or Numbers
+    if (typeof value === 'number') {
+      // Excel dates are days since 1899-12-30
+      const date = new Date((value - 25569) * 86400 * 1000);
+      if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
+      return '';
+    }
+
+    // Handle JS Date objects
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) return '';
+      return value.toISOString().split('T')[0];
+    }
+
+    if (typeof value !== 'string') return '';
+    const dateStr = value.trim();
     if (!dateStr) return '';
-    const parts = dateStr.split('/');
-    if (parts.length !== 3) return '';
-    const day = parts[0];
-    const monthStr = parts[1];
-    const year = parts[2];
-    const monthMap: { [key: string]: string } = {
-      'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04', 'May': '05', 'Jun': '06',
-      'Jul': '07', 'Aug': '08', 'Sep': '09', 'Oct': '10', 'Nov': '11', 'Dec': '12'
-    };
-    const month = monthMap[monthStr];
-    if (!month) return '';
-    return `${year}-${month}-${day.padStart(2, '0')}`;
+
+    // Already in YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+    // Try native Date.parse
+    const d = new Date(dateStr);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+
+    // Fallback for DD/MMM/YYYY or DD/MM/YYYY (common in SA)
+    const parts = dateStr.split(/[-/]/);
+    if (parts.length === 3) {
+      let day = parts[0].padStart(2, '0');
+      let month = parts[1];
+      let year = parts[2];
+
+      const monthMap: { [key: string]: string } = {
+        'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'may': '05', 'jun': '06',
+        'jul': '07', 'aug': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+      };
+
+      const m = monthMap[month.toLowerCase().substring(0, 3)] || month.padStart(2, '0');
+      const y = year.length === 2 ? '20' + year : year;
+
+      // Final sanity check on constructed date
+      const iso = `${y}-${m}-${day}`;
+      if (!isNaN(new Date(iso).getTime())) return iso;
+    }
+
+    return '';
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,72 +139,87 @@ const Tours: React.FC = () => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const data = event.target?.result;
-      const workbook = XLSX.read(data, { type: 'binary' });
-      const sheetName = workbook.SheetNames[0];
-      const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as any[][];
+      try {
+        const data = event.target?.result;
+        // Use 'array' type for better cross-format compatibility
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
 
-      // Assume first row is header
-      const headers = jsonData[0]?.map((h: string) => h?.trim()) || [];
-      const rows = jsonData.slice(1);
+        // Get all rows as arrays
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' }) as any[][];
+        if (jsonData.length < 1) return;
 
-      // Map column indices based on header names
-      const supplierIdx = headers.findIndex(h => h.toLowerCase().includes('supplier') || h.toLowerCase().includes('client'));
-      const tourNameIdx = headers.findIndex(h => h.toLowerCase().includes('tour name'));
-      const tourRefIdx = headers.findIndex(h => h.toLowerCase().includes('tour reference'));
-      const arrivalIdx = headers.findIndex(h => h.toLowerCase().includes('arrival'));
-      const departureIdx = headers.findIndex(h => h.toLowerCase().includes('departure'));
-      const paxIdx = headers.findIndex(h => h.toLowerCase().includes('pax'));
-      const statusIdx = headers.findIndex(h => h.toLowerCase().includes('status'));
+        // Extract and trim headers
+        const rawHeaders = jsonData[0] || [];
+        const headers = rawHeaders.map((h: any) => String(h || '').trim().toLowerCase());
+        const rows = jsonData.slice(1);
 
-      const mapped = rows.map(row => {
-        const supplier = supplierIdx >= 0 ? row[supplierIdx] : '';
-        const tourName = tourNameIdx >= 0 ? row[tourNameIdx] : '';
-        const tourRef = tourRefIdx >= 0 ? row[tourRefIdx] : '';
-        const arrival = arrivalIdx >= 0 ? row[arrivalIdx] : '';
-        const departure = departureIdx >= 0 ? row[departureIdx] : '';
-        const pax = paxIdx >= 0 ? row[paxIdx] : '';
-        const statusRaw = statusIdx >= 0 ? row[statusIdx] : '';
+        // Flexible Header Detection Logic
+        const findCol = (terms: string[]) => headers.findIndex(h => terms.some(t => h.includes(t)));
 
-        // Map status
-        let status = TourStatus.PLANNED;
-        if (typeof statusRaw === 'string') {
-          if (statusRaw.toLowerCase().includes('cancelled')) {
-            status = TourStatus.CANCELLED;
-          } else if (statusRaw.toLowerCase().includes('approved')) {
-            status = TourStatus.PLANNED;
-          } else if (statusRaw.toLowerCase().includes('active')) {
-            status = TourStatus.ACTIVE;
-          } else if (statusRaw.toLowerCase().includes('completed')) {
-            status = TourStatus.COMPLETED;
-          }
+        const supplierIdx = findCol(['supplier', 'client', 'customer']);
+        const tourNameIdx = findCol(['tour name', 'tour description', 'itinerary name']);
+        const tourRefIdx = findCol(['tour reference', 'tour ref', 'job number', 'reference']);
+        const arrivalIdx = findCol(['arrival', 'start', 'from date', 'entry']);
+        const departureIdx = findCol(['departure', 'end', 'to date', 'exit']);
+        const paxIdx = findCol(['pax', 'passengers', 'people', 'size']);
+        const statusIdx = findCol(['status', 'state']);
+
+        if (tourRefIdx === -1) {
+          showNotification('Could not detect "Tour Reference" column. Please check your headers.', 'error');
+          return;
         }
 
-        // Convert dates to ISO string (YYYY-MM-DD)
-        const startDate = parseDate(arrival);
-        const endDate = parseDate(departure);
+        const mapped = rows.map((row, index) => {
+          const supplier = supplierIdx >= 0 ? row[supplierIdx] : '';
+          const tourName = tourNameIdx >= 0 ? row[tourNameIdx] : '';
+          const tourRef = tourRefIdx >= 0 ? row[tourRefIdx] : '';
+          const arrival = arrivalIdx >= 0 ? row[arrivalIdx] : '';
+          const departure = departureIdx >= 0 ? row[departureIdx] : '';
+          const pax = paxIdx >= 0 ? row[paxIdx] : 0;
+          const statusRaw = statusIdx >= 0 ? String(row[statusIdx] || '').toLowerCase() : '';
 
-        return {
-          tour_reference: tourRef,
-          tour_name: tourName,
-          supplier: supplier,
-          start_date: startDate,
-          end_date: endDate,
-          status: status,
-          pax: pax,
-          notes: pax ? `PAX: ${pax}` : ''
-        };
-      }).filter(r => r.tour_reference && r.tour_reference !== '');
+          // Validate Tour Reference Presence
+          if (!tourRef) return null;
 
-      setImportStatus({ total: mapped.length, valid: mapped.length, data: mapped });
+          // Map status robustly
+          let status = TourStatus.PLANNED;
+          if (statusRaw.includes('cancel')) status = TourStatus.CANCELLED;
+          else if (statusRaw.includes('confirm') || statusRaw.includes('approved')) status = TourStatus.CONFIRMED; // Common in business files
+          else if (statusRaw.includes('active') || statusRaw.includes('current')) status = TourStatus.ACTIVE;
+          else if (statusRaw.includes('complete') || statusRaw.includes('done')) status = TourStatus.COMPLETED;
+
+          return {
+            tour_reference: String(tourRef).trim(),
+            tour_name: String(tourName || tourRef).trim(),
+            supplier: String(supplier || 'Direct client').trim(),
+            startDate: flexibleParseDate(arrival),
+            endDate: flexibleParseDate(departure),
+            status: status,
+            pax: parseInt(String(pax)) || 0,
+            notes: pax ? `PAX: ${pax}` : '',
+            rowNum: index + 2 // For debugging
+          };
+        }).filter(r => r !== null && r.tour_reference !== '');
+
+        if (mapped.length === 0) {
+          showNotification('No valid tour records found in the selected file.', 'error');
+          return;
+        }
+
+        setImportStatus({
+          total: rows.length,
+          valid: mapped.length,
+          data: mapped
+        });
+      } catch (err) {
+        console.error('Import Error:', err);
+        showNotification('Failed to process file. Please ensure it is a valid Excel or CSV file.', 'error');
+      }
     };
 
-    if (file.name.endsWith('.csv')) {
-      reader.readAsText(file);
-    } else {
-      reader.readAsBinaryString(file);
-    }
+    reader.readAsArrayBuffer(file);
   };
 
   const handleAddTourSubmit = async (e: React.FormEvent) => {
@@ -195,9 +249,10 @@ const Tours: React.FC = () => {
         vehicleId: '',
         driverId: ''
       });
+      showNotification('Tour unauthorized entry established successfully.', 'success');
       toursFetch.request('/tours');
     } catch (err) {
-      alert("Failed to create tour: " + err);
+      showNotification('Failed to authorize tour: ' + err, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -217,8 +272,8 @@ const Tours: React.FC = () => {
           tour_reference: item.tour_reference,
           tour_name: item.tour_name,
           supplier: item.supplier,
-          startDate: item.start_date,
-          endDate: item.end_date,
+          startDate: item.startDate,
+          endDate: item.endDate,
           status: item.status,
           notes: item.notes || '',
           pax: item.pax ? Number(item.pax) : 0,
@@ -236,29 +291,33 @@ const Tours: React.FC = () => {
 
     setImporting(false);
     if (errorCount === 0) {
-      alert(`Successfully imported ${successCount} tours.`);
+      showNotification(`Synchronized ${successCount} entries into the registry successfully.`, 'success');
       setIsImportModalOpen(false);
       setImportStatus(null);
       toursFetch.request('/tours');
     } else {
-      alert(`Imported ${successCount} tours, ${errorCount} failed.\n${errors.slice(0, 3).join('\n')}`);
-      // Keep modal open to allow retry?
+      showNotification(`Partial Sync: ${successCount} successful, ${errorCount} failed.`, 'error');
     }
   };
 
   const statusGroups = [
     {
-      id: 'Confirmed',
-      label: 'Confirmed Tours',
+      id: 'Operational',
+      label: 'Operational Tours',
       color: 'bg-emerald-500',
-      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE),
-      hasAssignment: (t: Tour) => t.vehicleId && t.driverId
+      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (t.vehicleId && t.driverId)
     },
     {
-      id: 'Pending',
-      label: 'Pending Tours',
+      id: 'PendingAssignment',
+      label: 'Pending Assignment',
       color: 'bg-amber-500',
-      filter: (t: Tour) => (t.status === TourStatus.PLANNED)
+      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (!t.vehicleId || !t.driverId)
+    },
+    {
+      id: 'Planned',
+      label: 'Planned / Drafts',
+      color: 'bg-slate-400',
+      filter: (t: Tour) => t.status === TourStatus.PLANNED
     }
   ];
 
@@ -467,12 +526,7 @@ const Tours: React.FC = () => {
             const matchesSearch = isWithinSearchRange(t.startDate);
             const matchesTourName = searchTerm === '' || t.tour_name.toLowerCase().includes(searchTerm.toLowerCase());
             const notCancelled = t.status !== TourStatus.CANCELLED;
-            
-            // For confirmed tours, only show if assigned (has both vehicle and driver)
-            if (group.id === 'Confirmed' && 'hasAssignment' in group) {
-              return matchesGroup && matchesDateRange && matchesSearch && matchesTourName && notCancelled && group.hasAssignment(t);
-            }
-            
+
             return matchesGroup && matchesDateRange && matchesSearch && matchesTourName && notCancelled;
           }) || [];
 
@@ -497,49 +551,49 @@ const Tours: React.FC = () => {
                 {groupTours.map(tour => {
                   const adjustedTour = calculateTourDates(tour);
                   return (
-                  <div
-                    key={tour.id}
-                    onClick={() => navigate(`/tours/${tour.id}`)}
-                    className="w-full md:w-[calc(50%-12px)] lg:w-[calc(25%-16px)] bg-white p-5 rounded-2xl border border-blue-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between"
-                  >
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
-                          <Hash size={12} />
-                          {formatTourName(adjustedTour.tour_name)}
-                        </div>
-                        <StatusBadge status={tour?.status} />
-                      </div>
-
-                      <div className="space-y-1">
-                        <h3 className="font-black text-lg text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">{tour.tour_reference}</h3>
-                      </div>
-
-                      <div className="grid grid-cols-1 gap-3 py-4 border-y border-slate-50">
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Registration No</p>
-                          <div className="flex items-center gap-2">
-                            <Truck size={12} className="text-indigo-600" />
-                            <span className="text-xs font-black text-slate-700 truncate">{getVehiclePlate(tour.vehicleId)}</span>
+                    <div
+                      key={tour.id}
+                      onClick={() => navigate(`/tours/${tour.id}`)}
+                      className="w-full md:w-[calc(50%-12px)] lg:w-[calc(25%-16px)] bg-white p-5 rounded-2xl border border-blue-200 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all cursor-pointer group flex flex-col justify-between"
+                    >
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-start">
+                          <div className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                            <Hash size={12} />
+                            {formatTourName(adjustedTour.tour_name)}
                           </div>
+                          <StatusBadge status={tour?.status} />
                         </div>
-                        {/* <div className="space-y-1">
+
+                        <div className="space-y-1">
+                          <h3 className="font-black text-lg text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">{tour.tour_reference}</h3>
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-3 py-4 border-y border-slate-50">
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Registration No</p>
+                            <div className="flex items-center gap-2">
+                              <Truck size={12} className="text-indigo-600" />
+                              <span className="text-xs font-black text-slate-700 truncate">{getVehiclePlate(tour.vehicleId)}</span>
+                            </div>
+                          </div>
+                          {/* <div className="space-y-1">
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
                           <div className="flex items-center gap-2">
                             <Globe size={12} className="text-sky-500" />
                             <span className="text-xs font-black text-slate-700 truncate">{tour.itinerary || 'Kruger Region'}</span>
                           </div>
                         </div> */}
-                        <div className="space-y-1">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">PAX</p>
-                          <div className="flex items-center gap-2">
-                            <User size={12} className="text-emerald-600" />
-                            <span className="text-xs font-black text-slate-700 truncate">{tour.pax || 'N/A'}</span>
+                          <div className="space-y-1">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">PAX</p>
+                            <div className="flex items-center gap-2">
+                              <User size={12} className="text-emerald-600" />
+                              <span className="text-xs font-black text-slate-700 truncate">{tour.pax || 'N/A'}</span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl group-hover:bg-indigo-50/50 transition-colors">
+                        {/* <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl group-hover:bg-indigo-50/50 transition-colors">
                         <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-indigo-600 shadow-sm border border-slate-100 uppercase">
                           {getDriverName(tour.driverId).charAt(0)}
                         </div>
@@ -549,20 +603,20 @@ const Tours: React.FC = () => {
                         </div>
                       </div> */}
 
-                      <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl group-hover:bg-indigo-50/50 transition-colors">
-                        <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-emerald-600 shadow-sm border border-slate-100 uppercase">
-                          <Wallet size={16} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Balance Available</p>
-                          <p className="text-xs font-black text-slate-800 truncate">
-                            R{(floatsFetch.data?.find(f => f.tourId === tour.id)?.remainingAmount / 100 || 0).toFixed(2)}
-                          </p>
+                        <div className="flex items-center gap-3 p-3 bg-slate-50/50 rounded-xl group-hover:bg-indigo-50/50 transition-colors">
+                          <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center font-black text-emerald-600 shadow-sm border border-slate-100 uppercase">
+                            <Wallet size={16} />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Balance Available</p>
+                            <p className="text-xs font-black text-slate-800 truncate">
+                              R{(floatsFetch.data?.find(f => f.tourId === tour.id)?.remainingAmount / 100 || 0).toFixed(2)}
+                            </p>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                );
+                  );
                 })}
                 {groupTours.length === 0 && (
                   <div className="w-full border-2 border-dashed border-slate-100 rounded-[3rem] py-20 text-center">

@@ -6,9 +6,11 @@ import { Plus, Search, Truck, X } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store.ts';
 import { api } from '../api.ts';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Trailers: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showNotification } = useNotification();
   const { data: trailers, loading, request } = useFetch<Trailer[]>();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,7 +40,7 @@ const Trailers: React.FC = () => {
       setNewTrailer({ model: '', licenceNumber: '', modelYear: '' });
       loadTrailers();
     } catch (err) {
-      alert('Failed to add trailer: ' + err);
+      showNotification('Failed to add trailer: ' + err, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -71,7 +73,7 @@ const Trailers: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {loading ? (
-           Array.from({length: 3}).map((_, i) => <div key={i} className="h-72 bg-white rounded-3xl animate-pulse border border-slate-100"></div>)
+          Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-72 bg-white rounded-3xl animate-pulse border border-slate-100"></div>)
         ) : (
           trailers?.map((t) => (
             <div
@@ -122,7 +124,7 @@ const Trailers: React.FC = () => {
                   <input
                     required
                     value={newTrailer.model}
-                    onChange={e => setNewTrailer({...newTrailer, model: e.target.value})}
+                    onChange={e => setNewTrailer({ ...newTrailer, model: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold"
                     placeholder="e.g. TRAILER MODEL X"
                   />
@@ -132,7 +134,7 @@ const Trailers: React.FC = () => {
                   <input
                     required
                     value={newTrailer.licenceNumber}
-                    onChange={e => setNewTrailer({...newTrailer, licenceNumber: e.target.value})}
+                    onChange={e => setNewTrailer({ ...newTrailer, licenceNumber: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold"
                     placeholder="e.g. TRL 123 CT"
                   />
@@ -143,7 +145,7 @@ const Trailers: React.FC = () => {
                     required
                     type="number"
                     value={newTrailer.modelYear}
-                    onChange={e => setNewTrailer({...newTrailer, modelYear: e.target.value})}
+                    onChange={e => setNewTrailer({ ...newTrailer, modelYear: e.target.value })}
                     className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold"
                     placeholder="e.g. 2020"
                   />

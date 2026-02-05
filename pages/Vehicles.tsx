@@ -8,10 +8,12 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store/store.ts';
 import { api } from '../api.ts';
 import { useNavigate } from 'react-router-dom';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Vehicles: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showNotification } = useNotification();
   const { data: vehicles, loading, request } = useFetch<Vehicle[]>();
   const { data: drivers, request: fetchDrivers } = useFetch<Driver[]>();
   const { data: tours, request: fetchTours } = useFetch<Tour[]>();
@@ -24,7 +26,7 @@ const Vehicles: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [inspectionModal, setInspectionModal] = useState<{ open: boolean, vehicle: Vehicle | null, type: string }>({ open: false, vehicle: null, type: '' });
   const [inspections, setInspections] = useState<Inspection[]>([]);
-  
+
   const [newIssue, setNewIssue] = useState({
     description: '',
     severity: IssueSeverity.LOW,
@@ -85,7 +87,7 @@ const Vehicles: React.FC = () => {
       setNewVehicle({ model: '', licenceNumber: '', modelYear: '', trailerModel: '', trailerLicence: '', odometer: '', lastServiced: '', nextService: '' });
       loadVehicles();
     } catch (err) {
-      alert('Failed to add vehicle: ' + err);
+      showNotification('Failed to add vehicle: ' + err, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -110,7 +112,7 @@ const Vehicles: React.FC = () => {
     } catch (err: any) {
       console.error('Assignment error:', err);
       const message = err?.response?.data?.message || err?.message || err;
-      alert(`Failed to assign driver: ${message}`);
+      showNotification(`Failed to assign driver: ${message}`, 'error');
     }
   };
 
@@ -216,7 +218,7 @@ const Vehicles: React.FC = () => {
       fetchIssues('/issues');
       loadVehicles();
     } catch (err) {
-      alert('Failed to report issue: ' + err);
+      showNotification('Failed to report issue: ' + err, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -329,7 +331,7 @@ const Vehicles: React.FC = () => {
 
                   {/* Tour or assignment */}
                   <div className="pt-4">
-                    { v.currentDriverId ? (
+                    {v.currentDriverId ? (
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center text-green-700">
@@ -340,7 +342,7 @@ const Vehicles: React.FC = () => {
                             <p className="text-sm font-bold text-slate-800">{v.currentDriverName || 'Unknown'}</p>
                           </div>
                         </div>
-                        
+
                       </div>
                     ) : v.status === 'ready' || v.status === VehicleStatus.READY ? (
                       canWrite && (
@@ -372,9 +374,9 @@ const Vehicles: React.FC = () => {
                             navigate(`/tours/${tour.id}`);
                           }}
                         >
-                          
+
                           <h4 className="text-sm font-bold text-slate-800 mb-1">{formatTourName(tour?.tour_reference)}</h4>
-                          
+
                           <div className="flex justify-between text-xs text-slate-500">
                             <span>{formatDateSA(tour.startDate)}</span>
                             <span>→</span>
@@ -688,7 +690,7 @@ const Vehicles: React.FC = () => {
                     <>
                       <div className="space-y-1.5">
                         <div className="space-y-2">
-                    
+
                           <div className="flex justify-between items-center py-2 border-b border-slate-100">
                             <span className="text-xs text-slate-500">Last Service (KM)</span>
                             <span className="text-sm font-bold text-slate-800">{lastServiceOdo}</span>

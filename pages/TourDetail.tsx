@@ -8,11 +8,13 @@ import InspectionList from '../components/InspectionList';
 import { ArrowLeft, Edit3, Clipboard, AlertCircle, Calendar, Truck, Info, Wallet, Plus, ShieldCheck, X, Car, Trash2 } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
+import { useNotification } from '../contexts/NotificationContext';
 
 const TourDetail: React.FC = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { showNotification, showConfirm } = useNotification();
 
   const [tour, setTour] = useState<Tour | null>(null);
   const [inspections, setInspections] = useState<Inspection[]>([]);
@@ -85,7 +87,7 @@ const TourDetail: React.FC = () => {
     const assignedVehicle = vehicles.find(v => v.id === tour.vehicleId);
 
     if (!assignedVehicle) {
-      alert('Cannot issue float: No vehicle assigned to this tour');
+      showNotification('Cannot issue float: No vehicle assigned to this tour', 'error');
       return;
     }
 
@@ -93,12 +95,12 @@ const TourDetail: React.FC = () => {
     const driverId = assignedVehicle.currentDriverId;
 
     if (!driverId) {
-      alert('Cannot issue float: No driver assigned to the vehicle');
+      showNotification('Cannot issue float: No driver assigned to the vehicle', 'error');
       return;
     }
 
     if (!newFloatAmount || newFloatAmount <= 0) {
-      alert('Please enter a valid amount greater than 0');
+      showNotification('Please enter a valid amount greater than 0', 'info');
       return;
     }
 
@@ -126,19 +128,21 @@ const TourDetail: React.FC = () => {
       fetchData();
     } catch (err) {
       console.error('Float issuance error:', err);
-      alert('Failed to issue float: ' + err);
+      showNotification('Failed to issue float: ' + err, 'error');
     }
   };
 
   const handleCloseFloat = async () => {
     if (!float || !canWrite) return;
-    if (!confirm('Close this float? This indicates all cash is accounted for.')) return;
-    try {
-      await api.closeFloat(float.id);
-      fetchData();
-    } catch (err) {
-      alert('Failed to close float');
-    }
+    showConfirm('Close this float? This indicates all cash is accounted for.', async () => {
+      try {
+        await api.closeFloat(float.id);
+        fetchData();
+        showNotification('Float settled and closed successfully.', 'success');
+      } catch (err) {
+        showNotification('Failed to close float', 'error');
+      }
+    }, 'Settle Float');
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -159,32 +163,34 @@ const TourDetail: React.FC = () => {
       setIsEditModalOpen(false);
       fetchData();
     } catch (err) {
-      alert('Failed to update tour: ' + err);
+      showNotification('Failed to update tour: ' + err, 'error');
     }
   };
 
   const handleCancelTour = async () => {
     if (!tour || !canWrite) return;
-    if (!confirm('Cancel this tour? This action cannot be undone.')) return;
-
-    try {
-      await api.updateTour(tour.id, { status: TourStatus.CANCELLED });
-      fetchData();
-    } catch (err) {
-      alert('Failed to cancel tour: ' + err);
-    }
+    showConfirm('Cancel this tour? This action cannot be undone.', async () => {
+      try {
+        await api.updateTour(tour.id, { status: TourStatus.CANCELLED });
+        fetchData();
+        showNotification('Tour has been successfully cancelled.', 'success');
+      } catch (err) {
+        showNotification('Failed to cancel tour: ' + err, 'error');
+      }
+    }, 'Cancel Tour');
   };
 
   const handleDeleteTour = async () => {
     if (!tour || !canWrite) return;
-    if (!confirm('Delete this tour? This action cannot be undone and will permanently remove the tour.')) return;
-
-    try {
-      await api.deleteTour(tour.id);
-      navigate('/tours');
-    } catch (err) {
-      alert('Failed to delete tour: ' + err);
-    }
+    showConfirm('Delete this tour? This action cannot be undone and will permanently remove the tour.', async () => {
+      try {
+        await api.deleteTour(tour.id);
+        navigate('/tours');
+        showNotification('Tour deleted from registry.', 'success');
+      } catch (err) {
+        showNotification('Failed to delete tour: ' + err, 'error');
+      }
+    }, 'Delete Tour');
   };
 
   const handleVehicleChange = (vehicleId: string) => {
@@ -202,31 +208,32 @@ const TourDetail: React.FC = () => {
 
   const handleAssignVehicle = async () => {
     if (!tour || !tour.vehicleId || assigning) return;
-    if (!confirm(`Assign vehicle to tour ${tour.id}? This will update tour and vehicle records.`)) return;
-    setAssigning(true);
-    try {
-      // Update tour with new vehicleId
-      await api.updateTour(tour.id, { vehicleId: tour.vehicleId });
-      // Optionally update vehicle with driver assignment
-      const selectedVehicle = vehicles.find(v => v.id === tour.vehicleId);
-      if (selectedVehicle && tour.driverId) {
-        await api.updateVehicle(selectedVehicle.id, {
-          currentDriverId: tour.driverId,
-          currentDriverName: resolvedDriverName,
-          assignedById: user?.uid,
-          assignedByName: user?.username,
-        });
+    showConfirm(`Assign vehicle to tour ${tour.tour_reference}? This will update tour and vehicle records.`, async () => {
+      setAssigning(true);
+      try {
+        // Update tour with new vehicleId
+        await api.updateTour(tour.id, { vehicleId: tour.vehicleId });
+        // Optionally update vehicle with driver assignment
+        const selectedVehicle = vehicles.find(v => v.id === tour.vehicleId);
+        if (selectedVehicle && tour.driverId) {
+          await api.updateVehicle(selectedVehicle.id, {
+            currentDriverId: tour.driverId,
+            currentDriverName: resolvedDriverName,
+            assignedById: user?.uid,
+            assignedByName: user?.username,
+          });
+        }
+        // Refresh data
+        fetchData();
+        showNotification('Vehicle assigned successfully.', 'success');
+      } catch (err) {
+        showNotification('Failed to assign vehicle: ' + err, 'error');
+        // Revert optimistic changes
+        fetchData();
+      } finally {
+        setAssigning(false);
       }
-      // Refresh data
-      fetchData();
-      alert('Vehicle assigned successfully.');
-    } catch (err) {
-      alert('Failed to assign vehicle: ' + err);
-      // Revert optimistic changes
-      fetchData();
-    } finally {
-      setAssigning(false);
-    }
+    }, 'Confirm Assignment');
   };
 
   if (loading) return (
@@ -289,11 +296,16 @@ const TourDetail: React.FC = () => {
                   Cancel Tour
                 </button>
                 <button
-                  onClick={async () => {
-                    if (confirm('Activate this tour?')) {
-                      await api.updateTour(tour.id, { status: TourStatus.ACTIVE });
-                      fetchData();
-                    }
+                  onClick={() => {
+                    showConfirm('Activate this tour?', async () => {
+                      try {
+                        await api.updateTour(tour.id, { status: TourStatus.ACTIVE });
+                        fetchData();
+                        showNotification('Tour activated successfully.', 'success');
+                      } catch (err) {
+                        showNotification('Failed to activate tour.', 'error');
+                      }
+                    }, 'Tour Activation');
                   }}
                   className="px-5 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20"
                 >
@@ -384,7 +396,7 @@ const TourDetail: React.FC = () => {
                             <option value="">Select a vehicle</option>
                             {vehicles.map((v) => (
                               <option key={v.id} value={v.id}>
-                                 {v.licenceNumber}
+                                {v.licenceNumber}
                               </option>
                             ))}
                           </select>

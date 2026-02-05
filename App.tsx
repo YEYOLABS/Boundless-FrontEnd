@@ -17,6 +17,7 @@ import { LogIn, Truck, IdCard, Database, Zap, Layers, UserCircle, AlertTriangle,
 import { useFetch } from './hooks/useFetch.ts';
 import { mockUsers } from './data/mockData.ts';
 import { User, Tour, Vehicle, Issue, Expense, UserRole } from './types.ts';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 const LoginScreen: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -326,7 +327,9 @@ const MainApp: React.FC = () => {
 const App: React.FC = () => {
   return (
     <Provider store={store}>
-      <MainApp />
+      <NotificationProvider>
+        <MainApp />
+      </NotificationProvider>
     </Provider>
   );
 };
