@@ -6,12 +6,14 @@ import { Sparkles, Edit2, Calendar, Truck, X, Save } from 'lucide-react';
 import { GoogleGenAI } from "@google/genai";
 import { RootState } from '../store/store.ts';
 import { api } from '../api';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Dashboard: React.FC = () => {
   const toursFetch = useFetch<Tour[]>();
   const vehiclesFetch = useFetch<Vehicle[]>();
   const issuesFetch = useFetch<Issue[]>();
   const [aiBriefing, setAiBriefing] = useState<string>("");
+  const { showNotification } = useNotification();
   const { user } = useSelector((state: RootState) => state.auth);
   const role = user?.role as UserRole;
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
@@ -36,7 +38,7 @@ const Dashboard: React.FC = () => {
       // Fix: Use process.env.API_KEY directly in GoogleGenAI constructor, assuming it is valid and pre-configured.
       const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
       const prompt = `Executive summary for fleet owners: ${vehicles.length} assets. ${tours.filter(t => t.status === TourStatus.ACTIVE).length} active tours. Briefly state if any immediate risk exists. 2 sentences max.`;
-      
+
       // Fix: Use gemini-3-flash-preview and the direct .text property for content extraction.
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
@@ -70,7 +72,7 @@ const Dashboard: React.FC = () => {
       setEditingVehicle(null);
     } catch (error) {
       console.error('Failed to update vehicle:', error);
-      alert('Failed to update vehicle');
+      showNotification('Failed to update vehicle', 'error');
     }
   };
 
@@ -128,7 +130,7 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="bg-white px-5 py-2.5 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
           <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Active: {new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+          <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">System Active: {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
       </header>
 
@@ -149,93 +151,93 @@ const Dashboard: React.FC = () => {
             </p>
           </div>
         </div>
- 
-       {/* Edit Vehicle Modal */}
-       {editingVehicle && (
-         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-           <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
-             <div className="flex items-center justify-between mb-6">
-               <h3 className="text-xl font-black text-slate-800">Edit Vehicle</h3>
-               <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600">
-                 <X size={24} />
-               </button>
-             </div>
-             <div className="space-y-4">
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Odometer (km)</label>
-                 <input
-                   type="number"
-                   value={editForm.odometer || ''}
-                   onChange={(e) => setEditForm({ ...editForm, odometer: parseInt(e.target.value) })}
-                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Licence Number</label>
-                 <input
-                   type="text"
-                   value={editForm.licenceNumber || ''}
-                   onChange={(e) => setEditForm({ ...editForm, licenceNumber: e.target.value })}
-                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Trailer Model</label>
-                 <input
-                   type="text"
-                   value={editForm.trailerModel || ''}
-                   onChange={(e) => setEditForm({ ...editForm, trailerModel: e.target.value })}
-                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Trailer Licence</label>
-                 <input
-                   type="text"
-                   value={editForm.trailerLicence || ''}
-                   onChange={(e) => setEditForm({ ...editForm, trailerLicence: e.target.value })}
-                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Last Serviced</label>
-                 <input
-                   type="date"
-                   value={editForm.lastServiced || ''}
-                   onChange={(e) => setEditForm({ ...editForm, lastServiced: e.target.value })}
-                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                 />
-               </div>
-               <div>
-                 <label className="block text-sm font-medium text-slate-700 mb-1">Next Service</label>
-                 <input
-                   type="date"
-                   value={editForm.nextService || ''}
-                   onChange={(e) => setEditForm({ ...editForm, nextService: e.target.value })}
-                   className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                 />
-               </div>
-             </div>
-             <div className="flex gap-3 mt-8">
-               <button
-                 onClick={handleCloseModal}
-                 className="flex-1 border border-slate-200 text-slate-700 font-medium py-2.5 rounded-lg hover:bg-slate-50"
-               >
-                 Cancel
-               </button>
-               <button
-                 onClick={handleSaveEdit}
-                 className="flex-1 bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2"
-               >
-                 <Save size={18} />
-                 Save Changes
-               </button>
-             </div>
-           </div>
-         </div>
-       )}
- 
-     </div>
+
+        {/* Edit Vehicle Modal */}
+        {editingVehicle && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-black text-slate-800">Edit Vehicle</h3>
+                <button onClick={handleCloseModal} className="text-slate-400 hover:text-slate-600">
+                  <X size={24} />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Odometer (km)</label>
+                  <input
+                    type="number"
+                    value={editForm.odometer || ''}
+                    onChange={(e) => setEditForm({ ...editForm, odometer: parseInt(e.target.value) })}
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Licence Number</label>
+                  <input
+                    type="text"
+                    value={editForm.licenceNumber || ''}
+                    onChange={(e) => setEditForm({ ...editForm, licenceNumber: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Trailer Model</label>
+                  <input
+                    type="text"
+                    value={editForm.trailerModel || ''}
+                    onChange={(e) => setEditForm({ ...editForm, trailerModel: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Trailer Licence</label>
+                  <input
+                    type="text"
+                    value={editForm.trailerLicence || ''}
+                    onChange={(e) => setEditForm({ ...editForm, trailerLicence: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Last Serviced</label>
+                  <input
+                    type="date"
+                    value={editForm.lastServiced || ''}
+                    onChange={(e) => setEditForm({ ...editForm, lastServiced: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Next Service</label>
+                  <input
+                    type="date"
+                    value={editForm.nextService || ''}
+                    onChange={(e) => setEditForm({ ...editForm, nextService: e.target.value })}
+                    className="w-full border border-slate-200 rounded-lg px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-8">
+                <button
+                  onClick={handleCloseModal}
+                  className="flex-1 border border-slate-200 text-slate-700 font-medium py-2.5 rounded-lg hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveEdit}
+                  className="flex-1 bg-indigo-600 text-white font-medium py-2.5 rounded-lg hover:bg-indigo-700 flex items-center justify-center gap-2"
+                >
+                  <Save size={18} />
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
       {/* Vehicle Timeline Section */}
       <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6">
         <div className="flex items-center justify-between mb-6">

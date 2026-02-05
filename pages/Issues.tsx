@@ -5,11 +5,13 @@ import { Issue, IssueStatus, IssueSeverity, Vehicle } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { Plus, Search, Filter, Wrench, X, Truck } from 'lucide-react';
 import { useFetch } from '../hooks/useFetch';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Issues: React.FC = () => {
   const [issues, setIssues] = useState<Issue[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { showNotification } = useNotification();
   const { data: vehicles, request: fetchVehicles } = useFetch<Vehicle[]>();
   const [activeTab, setActiveTab] = useState<'active' | 'closed'>('active');
 
@@ -55,7 +57,7 @@ const Issues: React.FC = () => {
       });
       loadIssues();
     } catch (err) {
-      alert('Failed to update status');
+      showNotification('Failed to update status', 'error');
     }
   };
 
@@ -76,7 +78,7 @@ const Issues: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newIssue.vehicleId) {
-      alert("Please select a vehicle.");
+      showNotification("Please select a vehicle.", 'info');
       return;
     }
     try {
@@ -85,7 +87,7 @@ const Issues: React.FC = () => {
       setNewIssue({ vehicleId: '', description: '', severity: IssueSeverity.MEDIUM });
       loadIssues();
     } catch (err) {
-      alert('Failed to create issue');
+      showNotification('Failed to create issue', 'error');
     }
   };
 

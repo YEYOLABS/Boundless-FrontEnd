@@ -4,6 +4,7 @@ import { api } from '../api';
 import { Expense, ExpenseStatus, UserRole } from '../types';
 import StatusBadge from '../components/StatusBadge';
 import { Search, Trash2, CheckCircle, XCircle, FileText } from 'lucide-react';
+import { useNotification } from '../contexts/NotificationContext';
 
 interface Props {
   role: UserRole;
@@ -12,6 +13,7 @@ interface Props {
 const Expenses: React.FC<Props> = ({ role }) => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showNotification, showConfirm } = useNotification();
   const isOwner = role === 'owner';
 
   const loadExpenses = async () => {
@@ -28,23 +30,27 @@ const Expenses: React.FC<Props> = ({ role }) => {
   useEffect(() => { loadExpenses(); }, []);
 
   const handleStatusChange = async (id: string, action: 'approve' | 'reject') => {
-    if (!confirm(`Mark expense as ${action}d?`)) return;
-    try {
-      await api.updateExpenseStatus(id, action);
-      loadExpenses();
-    } catch (err) {
-      alert('Failed to update status');
-    }
+    showConfirm(`Mark expense as ${action}d?`, async () => {
+      try {
+        await api.updateExpenseStatus(id, action);
+        loadExpenses();
+        showNotification(`Expense ${action}d.`, 'success');
+      } catch (err) {
+        showNotification('Failed to update status', 'error');
+      }
+    }, 'Expense Status Update');
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('PERMANENT ACTION: Delete this expense record?')) return;
-    try {
-      await api.deleteExpense(id);
-      loadExpenses();
-    } catch (err) {
-      alert('Failed to delete expense');
-    }
+    showConfirm('PERMANENT ACTION: Delete this expense record?', async () => {
+      try {
+        await api.deleteExpense(id);
+        loadExpenses();
+        showNotification('Expense record removed.', 'success');
+      } catch (err) {
+        showNotification('Failed to delete expense', 'error');
+      }
+    }, 'Delete Expense');
   };
 
   return (

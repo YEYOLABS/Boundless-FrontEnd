@@ -6,6 +6,7 @@ import StatusBadge from '../components/StatusBadge';
 import { UserPlus, Shield, X, Trash2, FileText, Upload, IdCard, Calendar, Phone, Globe, Edit } from 'lucide-react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../store/store';
+import { useNotification } from '../contexts/NotificationContext';
 
 const Admin: React.FC = () => {
   const { user: currentUser } = useSelector((state: RootState) => state.auth);
@@ -14,7 +15,8 @@ const Admin: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
-  
+  const { showNotification, showConfirm } = useNotification();
+
   const [newUser, setNewUser] = useState<Partial<User>>({
     username: '',
     pin: '',
@@ -97,7 +99,7 @@ const Admin: React.FC = () => {
       setDriverFields({ passportNumber: '', pdpNumber: '', pdpExpiry: '', passportFile: null, pdpFile: null });
       loadUsers();
     } catch (err) {
-      alert(`Failed to ${editingUser ? 'update' : 'authorize'} identity: ` + err);
+      showNotification(`Failed to ${editingUser ? 'update' : 'authorize'} identity: ` + err, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -120,16 +122,18 @@ const Admin: React.FC = () => {
 
   const handleDeleteUser = async (id: string) => {
     if (id === currentUser?.uid) {
-      alert("You cannot delete your own account.");
+      showNotification("You cannot delete your own account.", 'error');
       return;
     }
-    if (!confirm("Are you sure you want to revoke access for this user?")) return;
-    try {
-      await api.deleteUser(id);
-      loadUsers();
-    } catch (err) {
-      alert('Failed to delete user');
-    }
+    showConfirm("Are you sure you want to revoke access for this user?", async () => {
+      try {
+        await api.deleteUser(id);
+        loadUsers();
+        showNotification('User access revoked successfully.', 'success');
+      } catch (err) {
+        showNotification('Failed to delete user', 'error');
+      }
+    }, 'Revoke Access');
   };
 
   return (
@@ -139,7 +143,7 @@ const Admin: React.FC = () => {
           <h2 className="text-4xl font-black text-slate-800 tracking-tight">Identity Access</h2>
           <p className="text-slate-500 mt-1 text-sm font-medium">Governing system operators.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
           className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-600/30"
         >
@@ -179,8 +183,8 @@ const Admin: React.FC = () => {
                   </td>
                   <td className="px-10 py-6">
                     <div className="flex items-center gap-3">
-                       <Shield size={16} className={u.role === 'owner' ? 'text-amber-500' : 'text-indigo-400'} />
-                       <span className="text-xs font-black uppercase tracking-widest text-slate-700">{u.role.replace('_', ' ')}</span>
+                      <Shield size={16} className={u.role === 'owner' ? 'text-amber-500' : 'text-indigo-400'} />
+                      <span className="text-xs font-black uppercase tracking-widest text-slate-700">{u.role.replace('_', ' ')}</span>
                     </div>
                   </td>
                   <td className="px-10 py-6">
@@ -226,16 +230,16 @@ const Admin: React.FC = () => {
                 <X size={24} />
               </button>
             </div>
-            
+
             <div className="p-10 overflow-y-auto custom-scrollbar">
               <form onSubmit={handleAddUser} className="space-y-6">
                 {/* Standard Fields */}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Full Legal Name</label>
-                  <input 
-                    required 
-                    value={newUser.name} 
-                    onChange={e => setNewUser({...newUser, name: e.target.value})}
+                  <input
+                    required
+                    value={newUser.name}
+                    onChange={e => setNewUser({ ...newUser, name: e.target.value })}
                     className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-700"
                   />
                 </div>
@@ -247,7 +251,7 @@ const Admin: React.FC = () => {
                       required
                       disabled={!!editingUser}
                       value={newUser.username}
-                      onChange={e => setNewUser({...newUser, username: e.target.value})}
+                      onChange={e => setNewUser({ ...newUser, username: e.target.value })}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-700 disabled:bg-slate-100 disabled:text-slate-500"
                     />
                   </div>
@@ -259,7 +263,7 @@ const Admin: React.FC = () => {
                         required
                         type="tel"
                         value={newUser.phoneNumber}
-                        onChange={e => setNewUser({...newUser, phoneNumber: e.target.value})}
+                        onChange={e => setNewUser({ ...newUser, phoneNumber: e.target.value })}
                         className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-700"
                         placeholder="+27 82 000 0000"
                       />
@@ -274,7 +278,7 @@ const Admin: React.FC = () => {
                     <input
                       type="email"
                       value={newUser.email}
-                      onChange={e => setNewUser({...newUser, email: e.target.value})}
+                      onChange={e => setNewUser({ ...newUser, email: e.target.value })}
                       className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-700"
                       placeholder="user@company.com"
                     />
@@ -290,7 +294,7 @@ const Admin: React.FC = () => {
                         maxLength={4}
                         type="password"
                         value={newUser.pin}
-                        onChange={e => setNewUser({...newUser, pin: e.target.value})}
+                        onChange={e => setNewUser({ ...newUser, pin: e.target.value })}
                         className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-700 tracking-[0.5em]"
                       />
                     </div>
@@ -300,7 +304,7 @@ const Admin: React.FC = () => {
                     <select
                       required
                       value={newUser.role}
-                      onChange={e => setNewUser({...newUser, role: e.target.value as UserRole})}
+                      onChange={e => setNewUser({ ...newUser, role: e.target.value as UserRole })}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-700"
                     >
                       <option value="ops">Operations Manager (Fleet/Issues)</option>
@@ -316,10 +320,10 @@ const Admin: React.FC = () => {
                   <div className="pt-6 border-t border-slate-100 space-y-6 animate-fadeIn">
                     <div className="bg-indigo-50/50 p-6 rounded-2xl space-y-4">
                       <div className="flex items-center gap-2 mb-2">
-                         <Shield className="text-indigo-600" size={16} />
-                         <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Compliance Data</span>
+                        <Shield className="text-indigo-600" size={16} />
+                        <span className="text-[10px] font-black text-indigo-600 uppercase tracking-widest">Compliance Data</span>
                       </div>
-                      
+
                       <div className="space-y-4">
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
@@ -330,7 +334,7 @@ const Admin: React.FC = () => {
                             <input
                               required
                               value={driverFields.passportNumber}
-                              onChange={e => setDriverFields({...driverFields, passportNumber: e.target.value})}
+                              onChange={e => setDriverFields({ ...driverFields, passportNumber: e.target.value })}
                               className="w-full pl-12 pr-5 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-600 font-bold text-slate-700"
                               placeholder="e.g. Z1234567"
                             />
@@ -341,10 +345,10 @@ const Admin: React.FC = () => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PrDP Number</label>
-                          <input 
-                            required 
-                            value={driverFields.pdpNumber} 
-                            onChange={e => setDriverFields({...driverFields, pdpNumber: e.target.value})}
+                          <input
+                            required
+                            value={driverFields.pdpNumber}
+                            onChange={e => setDriverFields({ ...driverFields, pdpNumber: e.target.value })}
                             className="w-full px-5 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-600 font-bold text-slate-700"
                             placeholder="e.g. PDP-X99"
                           />
@@ -353,11 +357,11 @@ const Admin: React.FC = () => {
                           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PrDP Expiry</label>
                           <div className="relative">
                             <Calendar size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-                            <input 
-                              required 
+                            <input
+                              required
                               type="date"
-                              value={driverFields.pdpExpiry} 
-                              onChange={e => setDriverFields({...driverFields, pdpExpiry: e.target.value})}
+                              value={driverFields.pdpExpiry}
+                              onChange={e => setDriverFields({ ...driverFields, pdpExpiry: e.target.value })}
                               className="w-full pl-11 pr-5 py-3 bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-600 font-bold text-slate-700"
                             />
                           </div>
@@ -371,7 +375,7 @@ const Admin: React.FC = () => {
                             <input
                               type="file"
                               className="hidden"
-                              onChange={e => setDriverFields({...driverFields, passportFile: e.target.files?.[0] || null})}
+                              onChange={e => setDriverFields({ ...driverFields, passportFile: e.target.files?.[0] || null })}
                             />
                             {driverFields.passportFile ? (
                               <div className="flex items-center gap-2 text-indigo-600 font-bold text-[10px] truncate">
@@ -390,10 +394,10 @@ const Admin: React.FC = () => {
                         <div className="space-y-2">
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">PrDP Permit Copy</p>
                           <label className="cursor-pointer flex items-center justify-center gap-2 p-4 bg-white border-2 border-dashed border-slate-200 rounded-xl hover:border-indigo-400 transition-colors group h-[80px]">
-                            <input 
-                              type="file" 
-                              className="hidden" 
-                              onChange={e => setDriverFields({...driverFields, pdpFile: e.target.files?.[0] || null})}
+                            <input
+                              type="file"
+                              className="hidden"
+                              onChange={e => setDriverFields({ ...driverFields, pdpFile: e.target.files?.[0] || null })}
                             />
                             {driverFields.pdpFile ? (
                               <div className="flex items-center gap-2 text-indigo-600 font-bold text-[10px] truncate">
@@ -412,7 +416,7 @@ const Admin: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="flex gap-4 pt-6 sticky bottom-0 bg-white">
                   <button type="button" onClick={() => {
                     setIsModalOpen(false);
