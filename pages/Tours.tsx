@@ -302,16 +302,16 @@ const Tours: React.FC = () => {
 
   const statusGroups = [
     {
-      id: 'Operational',
-      label: 'Operational Tours',
+      id: 'Confirmed',
+      label: 'Confirmed Tours',
       color: 'bg-emerald-500',
-      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (t.vehicleId && t.driverId)
+      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (t.vehicleId || t.driverId)
     },
     {
       id: 'PendingAssignment',
       label: 'Pending Assignment',
       color: 'bg-amber-500',
-      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (!t.vehicleId || !t.driverId)
+      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (!t.vehicleId && !t.driverId)
     },
     {
       id: 'Planned',
@@ -621,7 +621,7 @@ const Tours: React.FC = () => {
                 {groupTours.length === 0 && (
                   <div className="w-full border-2 border-dashed border-slate-100 rounded-[3rem] py-20 text-center">
                     <Info className="mx-auto text-slate-200 mb-4" size={32} />
-                    <p className="text-xs font-black text-slate-300 uppercase tracking-widest italic">No Operational History</p>
+                    <p className="text-xs font-black text-slate-300 uppercase tracking-widest italic">No records in this category</p>
                   </div>
                 )}
               </div>
