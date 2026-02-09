@@ -61,10 +61,6 @@ export const mockVehicles: Vehicle[] = [
     vehicleMaintenanceIntervalsKm: {
       tyres: 50000,
       alignmentBalancing: 20000,
-      brakePadsFront: 40000,
-      brakePadsRear: 60000,
-      brakeDisksFront: 80000,
-      brakeDisksRear: 80000,
       service: 10000,
       turboExchange: 150000,
       handbrakeShoes: 100000,
@@ -89,10 +85,6 @@ export const mockVehicles: Vehicle[] = [
     vehicleMaintenanceIntervalsKm: {
       tyres: 60000,
       alignmentBalancing: 25000,
-      brakePadsFront: 50000,
-      brakePadsRear: 70000,
-      brakeDisksFront: 90000,
-      brakeDisksRear: 90000,
       service: 12000,
       turboExchange: 0,
       handbrakeShoes: 80000,
@@ -117,10 +109,6 @@ export const mockVehicles: Vehicle[] = [
     vehicleMaintenanceIntervalsKm: {
       tyres: 80000,
       alignmentBalancing: 30000,
-      brakePadsFront: 60000,
-      brakePadsRear: 80000,
-      brakeDisksFront: 100000,
-      brakeDisksRear: 100000,
       service: 15000,
       turboExchange: 200000,
       handbrakeShoes: 120000,
@@ -178,7 +166,6 @@ export const mockTours: Tour[] = [
 
 export const mockIssues: Issue[] = [
   { id: 'i1', vehicleId: 'U1I6JYq9ftS0B8lDJzqd', vehicleName: 'BMW 5 Series 2023', description: 'Left headlight flickering', severity: IssueSeverity.LOW, status: IssueStatus.REPORTED, reportedAt: '2024-05-05' },
-  { id: 'i2', vehicleId: 'zHG7nF5fP8FT00LLuG9s', vehicleName: 'HONDA FIT 3', description: 'Brake pad wear warning', severity: IssueSeverity.HIGH, status: IssueStatus.SCHEDULED, reportedAt: '2024-05-10' },
 ];
 
 export const mockExpenses: Expense[] = [

@@ -26,14 +26,10 @@ const VehicleDetail: React.FC = () => {
   const defaultIntervals = {
     service: 15000,
     handbrakeShoes: 150000,
-    brakeDisksFront: 70000,
-    brakeDisksRear: 70000,
     alignmentBalancing: 8000,
     tyres: 70000,
     turboExchange: 150000,
     clutchReplacement: 100000,
-    brakePadsFront: 45000,
-    brakePadsRear: 45000,
   };
 
   const [maintenanceIntervals, setMaintenanceIntervals] = useState(defaultIntervals);
@@ -374,7 +370,7 @@ const VehicleDetail: React.FC = () => {
           {activeTab === 'maintenance' && (
             <div className="space-y-6">
               <div className="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
+                <div className="flex justify-between items-center mb-8">
                   <h4 className="text-lg font-black text-slate-800 tracking-tight">Master Data</h4>
                   {canWrite && (
                     <button
@@ -385,21 +381,83 @@ const VehicleDetail: React.FC = () => {
                     </button>
                   )}
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {Object.entries(maintenanceIntervals).map(([key, value]) => (
-                    <div key={key} className="space-y-2">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                        {key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                      </label>
-                      <input
-                        type="number"
-                        value={value}
-                        onChange={e => setMaintenanceIntervals({ ...maintenanceIntervals, [key]: parseInt(e.target.value) || 0 })}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-4 focus:ring-indigo-500/10 outline-none text-sm font-bold"
-                        disabled={!canWrite}
-                      />
-                    </div>
-                  ))}
+
+                {/* Tyres Section */}
+                <div className="mb-8 border-b border-slate-100 pb-8">
+                  <h5 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Tyres</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {[
+                      { label: 'Left Front', key: 'tyres_left_front' },
+                      { label: 'Right Front', key: 'tyres_right_front' },
+                      { label: 'Left Rear Inner', key: 'tyres_left_rear_inner' },
+                      { label: 'Left Rear Outer', key: 'tyres_left_rear_outer' },
+                      { label: 'Right Rear Inner', key: 'tyres_right_rear_inner' },
+                      { label: 'Right Rear Outer', key: 'tyres_right_rear_outer' },
+                    ].map((item) => (
+                      <div key={item.key} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{item.label}</p>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="number"
+                            placeholder="mm"
+                            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none text-sm font-bold"
+                            disabled={!canWrite}
+                          />
+                          <span className="text-xs text-slate-400 font-bold">mm</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
+                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Last Log</p>
+                    <p className="text-sm font-bold text-slate-800">30,911 km</p>
+                  </div>
+                </div>
+
+                {/* Wheels Section */}
+                <div className="mb-8 border-b border-slate-100 pb-8">
+                  <h5 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Wheels</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { label: 'Alignment', key: 'wheels_alignment' },
+                      { label: 'Balancing', key: 'wheels_balancing' },
+                    ].map((item) => (
+                      <div key={item.key} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{item.label}</p>
+                        <input
+                          type="number"
+                          placeholder="km"
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none text-sm font-bold"
+                          disabled={!canWrite}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Services Section */}
+                <div>
+                  <h5 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Services</h5>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {[
+                      { label: 'Service', key: 'service' },
+                      { label: 'Turbo Exchange', key: 'turboExchange' },
+                      { label: 'Handbrake Shoes', key: 'handbrakeShoes' },
+                      { label: 'Clutch Replacement', key: 'clutchReplacement' },
+                    ].map((item) => (
+                      <div key={item.key} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{item.label}</p>
+                        <input
+                          type="number"
+                          value={maintenanceIntervals[item.key as keyof typeof maintenanceIntervals] || ''}
+                          onChange={e => setMaintenanceIntervals({ ...maintenanceIntervals, [item.key]: parseInt(e.target.value) || 0 })}
+                          placeholder="km"
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none text-sm font-bold"
+                          disabled={!canWrite}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

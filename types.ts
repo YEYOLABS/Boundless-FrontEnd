@@ -80,10 +80,6 @@ export interface Vehicle {
   vehicleMaintenanceIntervalsKm?: {
     tyres: number;
     alignmentBalancing: number;
-    brakePadsFront: number;
-    brakePadsRear: number;
-    brakeDisksFront: number;
-    brakeDisksRear: number;
     service: number;
     turboExchange: number;
     handbrakeShoes: number;
@@ -101,6 +97,7 @@ export interface Vehicle {
   assignedByName?: string;
   assignedById?: string;
   latest_odometer?: number;
+  sortOrder?: number;
   createdAt?: string;
 }
 

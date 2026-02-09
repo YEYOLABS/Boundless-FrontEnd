@@ -141,8 +141,6 @@ const Vehicles: React.FC = () => {
     switch (type) {
       case 'tyres':
         return computeColor(intervals.tyres, lastServiceOdo);
-      case 'brakes':
-        return computeColor(intervals.brakePadsFront, lastServiceOdo);
       case 'wheels':
         return computeColor(intervals.alignmentBalancing, lastServiceOdo);
       case 'service':
@@ -262,7 +260,11 @@ const Vehicles: React.FC = () => {
             <div key={i} className="h-40 bg-white rounded-3xl animate-pulse border border-slate-100"></div>
           ))
         ) : (
-          vehicles?.filter(v =>
+          vehicles?.sort((a, b) => {
+            const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+            const orderB = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+            return orderA - orderB;
+          }).filter(v =>
             (v.licenceNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (v.model || '').toLowerCase().includes(searchQuery.toLowerCase())
           ).map((v) => {
@@ -383,9 +385,9 @@ const Vehicles: React.FC = () => {
                             <span>{formatDateSA(tour.endDate)}</span>
                           </div>
                           <div className="flex gap-1 max-w-md mt-3">
-                            {(['tyres', 'brakes', 'wheels', 'service', 'trailer'] as const).map((type) => {
+                            {(['tyres', 'wheels', 'service', 'trailer'] as const).map((type) => {
                               const color = getInspectionColor(v, type);
-                              const label = type === 'tyres' ? 'T' : type === 'brakes' ? 'B' : type === 'wheels' ? 'W' : type === 'service' ? 'S' : 'Tr';
+                              const label = type === 'tyres' ? 'T' : type === 'wheels' ? 'W' : type === 'service' ? 'S' : 'Tr';
                               const colorClasses = {
                                 green: 'bg-green-100 text-green-800 hover:bg-green-200',
                                 amber: 'bg-amber-100 text-amber-800 hover:bg-amber-200',
@@ -403,9 +405,9 @@ const Vehicles: React.FC = () => {
                             })}
                           </div>
 
-                          {/* TBWTR Status Text */}
+                          {/* TWSTR Status Text */}
                           <div className="mt-2 space-y-1">
-                            {(['tyres', 'brakes', 'wheels', 'service', 'trailer'] as const).map((type) => {
+                            {(['tyres', 'wheels', 'service', 'trailer'] as const).map((type) => {
                               const color = getInspectionColor(v, type);
                               const label = type.charAt(0).toUpperCase() + type.slice(1);
                               const statusText = color === 'green' ? 'Good' : color === 'amber' ? 'Check' : 'Critical';
@@ -644,11 +646,6 @@ const Vehicles: React.FC = () => {
                       lastServiceOdo = inspectionModal.vehicle.odometer;
                       nextServiceOdo = inspectionModal.vehicle.odometer + interval;
                       break;
-                    case 'brakes':
-                      interval = intervals.brakePadsFront;
-                      lastServiceOdo = inspectionModal.vehicle.odometer;
-                      nextServiceOdo = inspectionModal.vehicle.odometer + interval;
-                      break;
                     case 'wheels':
                       interval = intervals.alignmentBalancing;
                       lastServiceOdo = inspectionModal.vehicle.odometer;
@@ -716,7 +713,7 @@ const Vehicles: React.FC = () => {
                 })()}
 
                 {/* Measurements Section */}
-                {(inspectionModal.type === 'tyres' || inspectionModal.type === 'brakes' || inspectionModal.type === 'trailer') && (
+                {(inspectionModal.type === 'tyres' || inspectionModal.type === 'trailer') && (
                   <div className="space-y-1.5 pt-2">
                     <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                       Latest Measurements (mm)
@@ -724,7 +721,6 @@ const Vehicles: React.FC = () => {
                     <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
                       {(() => {
                         const relevantKey = inspectionModal.type === 'tyres' ? 'tyre_tread_depth' :
-                          inspectionModal.type === 'brakes' ? 'brake_pad_thickness' :
                             'trailer_tread_depth';
 
                         const latestInspection = inspections
@@ -742,12 +738,6 @@ const Vehicles: React.FC = () => {
                             { key: 'left_rear_outer', label: 'Left Rear Outer' },
                             { key: 'right_rear_inner', label: 'Right Rear Inner' },
                             { key: 'right_rear_outer', label: 'Right Rear Outer' },
-                          ],
-                          'brakes': [
-                            { key: 'left_front', label: 'Left Front' },
-                            { key: 'right_front', label: 'Right Front' },
-                            { key: 'left_rear', label: 'Left Rear' },
-                            { key: 'right_rear', label: 'Right Rear' },
                           ],
                           'trailer': [
                             { key: 'left', label: 'Left' },
