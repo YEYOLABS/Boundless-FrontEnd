@@ -383,59 +383,68 @@ const VehicleDetail: React.FC = () => {
                 </div>
 
                 {/* Tyres Section */}
-                <div className="mb-8 border-b border-slate-100 pb-8">
+                <div className="mb-8">
                   <h5 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Tyres</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {[
-                      { label: 'Left Front', key: 'tyres_left_front' },
-                      { label: 'Right Front', key: 'tyres_right_front' },
-                      { label: 'Left Rear Inner', key: 'tyres_left_rear_inner' },
-                      { label: 'Left Rear Outer', key: 'tyres_left_rear_outer' },
-                      { label: 'Right Rear Inner', key: 'tyres_right_rear_inner' },
-                      { label: 'Right Rear Outer', key: 'tyres_right_rear_outer' },
-                    ].map((item) => (
-                      <div key={item.key} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{item.label}</p>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="number"
-                            placeholder="mm"
-                            className="flex-1 px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none text-sm font-bold"
-                            disabled={!canWrite}
-                          />
-                          <span className="text-xs text-slate-400 font-bold">mm</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-200">
-                    <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest">Last Log</p>
-                    <p className="text-sm font-bold text-slate-800">30,911 km</p>
+                  <div className="bg-white border border-slate-100 rounded-2xl overflow-hidden">
+                    <table className="w-full">
+                      <thead className="bg-slate-50 border-b border-slate-100">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Position</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Replaced At</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Due At</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Balance</th>
+                          <th className="px-4 py-3 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Tread</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { label: 'Left Front', key: 'tyres_left_front' },
+                          { label: 'Right Front', key: 'tyres_right_front' },
+                          { label: 'Left Rear Inner', key: 'tyres_left_rear_inner' },
+                          { label: 'Left Rear Outer', key: 'tyres_left_rear_outer' },
+                          { label: 'Right Rear Inner', key: 'tyres_right_rear_inner' },
+                          { label: 'Right Rear Outer', key: 'tyres_right_rear_outer' },
+                        ].map((item) => {
+                          const replacedAt = 30911; // This should come from vehicle data
+                          const dueAt = replacedAt + (maintenanceIntervals.tyres || 70000);
+                          const currentOdo = vehicle.latest_odometer || vehicle.odometer || 0;
+                          const balance = dueAt - currentOdo;
+                          const tread = 4.0; // This should come from latest inspection data
+
+                          return (
+                            <tr key={item.key} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                              <td className="px-4 py-3">
+                                <p className="text-sm font-bold text-slate-700">{item.label}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="text-sm font-bold text-slate-600">{replacedAt.toLocaleString()} km</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="text-sm font-bold text-slate-600">{dueAt.toLocaleString()} km</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <div className={`inline-block px-3 py-1 rounded-lg text-sm font-black ${
+                                  balance < 0 
+                                    ? 'bg-rose-100 text-rose-700' 
+                                    : balance < 5000 
+                                    ? 'bg-amber-100 text-amber-700' 
+                                    : 'bg-emerald-100 text-emerald-700'
+                                }`}>
+                                  {balance.toLocaleString()} km
+                                </div>
+                              </td>
+                              <td className="px-4 py-3">
+                                <p className="text-sm font-bold text-slate-600">{tread.toFixed(1)} mm</p>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
                   </div>
                 </div>
 
-                {/* Wheels Section */}
-                <div className="mb-8 border-b border-slate-100 pb-8">
-                  <h5 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Wheels</h5>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {[
-                      { label: 'Alignment', key: 'wheels_alignment' },
-                      { label: 'Balancing', key: 'wheels_balancing' },
-                    ].map((item) => (
-                      <div key={item.key} className="bg-slate-50 p-4 rounded-xl border border-slate-100">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">{item.label}</p>
-                        <input
-                          type="number"
-                          placeholder="km"
-                          className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:ring-2 focus:ring-indigo-500/50 outline-none text-sm font-bold"
-                          disabled={!canWrite}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Services Section */}
+                {/* Other Services Section */}
                 <div>
                   <h5 className="text-sm font-black text-slate-700 uppercase tracking-widest mb-4">Services</h5>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
