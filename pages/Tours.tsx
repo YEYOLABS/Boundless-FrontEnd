@@ -301,12 +301,13 @@ const Tours: React.FC = () => {
   };
 
   const statusGroups = [
-    {
-      id: 'Confirmed',
-      label: 'Confirmed Tours',
-      color: 'bg-emerald-500',
-      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (t.vehicleId || t.driverId)
-    },
+    // Confirmed tours now only show on whiteboard, not on assign board
+    // {
+    //   id: 'Confirmed',
+    //   label: 'Confirmed Tours',
+    //   color: 'bg-emerald-500',
+    //   filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (t.vehicleId || t.driverId)
+    // },
     {
       id: 'PendingAssignment',
       label: 'Pending Assignment',
