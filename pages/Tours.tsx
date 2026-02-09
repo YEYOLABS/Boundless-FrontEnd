@@ -563,7 +563,35 @@ const Tours: React.FC = () => {
                             <Hash size={12} />
                             {formatTourName(adjustedTour.tour_name)}
                           </div>
-                          <StatusBadge status={tour?.status} />
+                          <div className="flex items-center gap-2">
+                            <StatusBadge status={tour?.status} />
+                            {/* Service Indicator */}
+                            {tour.serviceIndicator && (
+                              <div 
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                                  tour.serviceIndicator.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
+                                  tour.serviceIndicator.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-rose-100 text-rose-700'
+                                }`}
+                                title={`Service: ${tour.serviceIndicator.remainingKm.toLocaleString()} km remaining`}
+                              >
+                                S
+                              </div>
+                            )}
+                            {/* Brake Indicator */}
+                            {tour.brakeIndicator && (
+                              <div 
+                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                                  tour.brakeIndicator.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
+                                  tour.brakeIndicator.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                                  'bg-rose-100 text-rose-700'
+                                }`}
+                                title={`Brakes: ${tour.brakeIndicator.remainingKm.toLocaleString()} km remaining`}
+                              >
+                                B
+                              </div>
+                            )}
+                          </div>
                         </div>
 
                         <div className="space-y-1">

@@ -131,6 +131,16 @@ export interface Tour {
   notes?: string;
   createdAt?: string;
   createdBy?: string;
+  serviceIndicator?: {
+    color: 'green' | 'amber' | 'red';
+    remainingKm: number;
+    cumulativeKm: number;
+  };
+  brakeIndicator?: {
+    color: 'green' | 'amber' | 'red';
+    remainingKm: number;
+    cumulativeKm: number;
+  };
 }
 
 export enum IssueStatus {
