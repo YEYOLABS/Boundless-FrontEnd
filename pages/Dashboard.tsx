@@ -109,7 +109,12 @@ const Dashboard: React.FC = () => {
       entry.tours.sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
     });
 
-    return Array.from(vehicleMap.values());
+    // Sort vehicles by sortOrder
+    return Array.from(vehicleMap.values()).sort((a, b) => {
+      const orderA = a.vehicle.sortOrder ?? Number.MAX_SAFE_INTEGER;
+      const orderB = b.vehicle.sortOrder ?? Number.MAX_SAFE_INTEGER;
+      return orderA - orderB;
+    });
   }, [vehiclesFetch.data, toursFetch.data]);
 
   if (vehiclesFetch.loading) {

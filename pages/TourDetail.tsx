@@ -67,7 +67,14 @@ const TourDetail: React.FC = () => {
         setResolvedVehicleName(vName);
         setResolvedDriverName(dName);
       }
-      setVehicles(vehiclesData as Vehicle[]);
+      
+      // Sort vehicles by sortOrder
+      const sortedVehicles = (vehiclesData as Vehicle[]).sort((a, b) => {
+        const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        const orderB = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+        return orderA - orderB;
+      });
+      setVehicles(sortedVehicles);
     } catch (err) {
       console.error("Fetch Error:", err);
     } finally {

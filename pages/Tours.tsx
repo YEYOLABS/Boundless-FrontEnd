@@ -700,7 +700,11 @@ const Tours: React.FC = () => {
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 font-bold text-slate-800"
                     >
                       <option value="">Choose Vehicle...</option>
-                      {vehiclesFetch.data?.map(v => <option key={v.id} value={v.id}>{v.model} ({v.licenceNumber})</option>)}
+                      {vehiclesFetch.data?.sort((a, b) => {
+                        const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
+                        const orderB = b.sortOrder ?? Number.MAX_SAFE_INTEGER;
+                        return orderA - orderB;
+                      }).map(v => <option key={v.id} value={v.id}>{v.model} ({v.licenceNumber})</option>)}
                     </select>
                   </div>
                   <div className="space-y-2">
