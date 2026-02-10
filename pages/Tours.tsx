@@ -558,6 +558,15 @@ const Tours: React.FC = () => {
               <div className="flex flex-wrap gap-6">
                 {groupTours.map(tour => {
                   const adjustedTour = calculateTourDates(tour);
+                  
+                  // Debug: Log maintenance indicators
+                  if (tour.maintenanceIndicators) {
+                    console.log(`[Tours] Tour ${tour.tour_reference}:`, {
+                      service: tour.maintenanceIndicators.service,
+                      wheels: tour.maintenanceIndicators.wheels
+                    });
+                  }
+                  
                   return (
                     <div
                       key={tour.id}

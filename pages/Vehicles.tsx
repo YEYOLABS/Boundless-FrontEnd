@@ -386,8 +386,19 @@ const Vehicles: React.FC = () => {
                           </div>
                           <div className="flex gap-1 max-w-md mt-3">
                             {(['tyres', 'wheels', 'service', 'trailer'] as const).map((type) => {
-                              const color = getInspectionColor(v, type);
-                              const label = type === 'tyres' ? 'T' : type === 'wheels' ? 'W' : type === 'service' ? 'S' : 'Tr';
+                              // Use tour's maintenanceIndicators if available, otherwise fall back to vehicle calculation
+                              let color: 'green' | 'amber' | 'red' = 'green';
+                              
+                              if (tour.maintenanceIndicators) {
+                                if (type === 'tyres') color = tour.maintenanceIndicators.tyres.color;
+                                else if (type === 'wheels') color = tour.maintenanceIndicators.wheels.color;
+                                else if (type === 'service') color = tour.maintenanceIndicators.service.color;
+                                else if (type === 'trailer') color = tour.maintenanceIndicators.brakes.color;
+                              } else {
+                                color = getInspectionColor(v, type);
+                              }
+                              
+                              const label = type === 'tyres' ? 'T' : type === 'wheels' ? 'W' : type === 'service' ? 'S' : 'TR';
                               const colorClasses = {
                                 green: 'bg-green-100 text-green-800 hover:bg-green-200',
                                 amber: 'bg-amber-100 text-amber-800 hover:bg-amber-200',
