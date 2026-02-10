@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Tour, TourStatus, Vehicle, Driver, Float } from '../types';
 import StatusBadge from '../components/StatusBadge';
+import MaintenanceModal from '../components/MaintenanceModal';
 import {
   Plus, X, Upload, Check, FileText, Calendar,
   MapPin, Truck, User, Globe, Hash, Info, Briefcase, Search, Filter, Wallet, CheckCircle,
@@ -29,6 +30,12 @@ const Tours: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isConfirmedToursModalOpen, setIsConfirmedToursModalOpen] = useState(false);
+  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
+  const [selectedMaintenance, setSelectedMaintenance] = useState<{
+    vehiclePlate: string;
+    type: 'tyres' | 'wheels' | 'service' | 'brakes';
+    data: any;
+  } | null>(null);
   const [importStatus, setImportStatus] = useState<{ valid: number, total: number, data: any[] } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -565,10 +572,61 @@ const Tours: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-2">
                             <StatusBadge status={tour?.status} />
-                            {/* Service Indicator */}
-                            {tour.serviceIndicator && (
+                            {/* Maintenance Indicators: T (Tyres), W (Wheels), S (Service), B (Brakes) */}
+                            {tour.maintenanceIndicators && (
+                              <>
+                                {/* Tyres Indicator */}
+                                <div 
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                                    tour.maintenanceIndicators.tyres.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
+                                    tour.maintenanceIndicators.tyres.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-rose-100 text-rose-700'
+                                  }`}
+                                  title={`Tyres: ${tour.maintenanceIndicators.tyres.remainingKm.toLocaleString()} km remaining`}
+                                >
+                                  T
+                                </div>
+                                {/* Wheels Indicator */}
+                                <div 
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                                    tour.maintenanceIndicators.wheels.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
+                                    tour.maintenanceIndicators.wheels.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-rose-100 text-rose-700'
+                                  }`}
+                                  title={`Wheels (Alignment/Balancing): ${tour.maintenanceIndicators.wheels.remainingKm.toLocaleString()} km remaining`}
+                                >
+                                  W
+                                </div>
+                                {/* Service Indicator */}
+                                <div 
+                                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${
+                                    tour.maintenanceIndicators.service.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
+                                    tour.maintenanceIndicators.service.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                                    'bg-rose-100 text-rose-700'
+                                  }`}
+                                  title={`Service: ${tour.maintenanceIndicators.service.remainingKm.toLocaleString()} km remaining`}
+                                >
+                                  S
+                                </div>
+                                {/* Brakes Indicator - Only show if trailer required */}
+                                {tour.trailer_required && (
+                                  <div 
+                                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-black ${
+                                      tour.maintenanceIndicators.brakes.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
+                                      tour.maintenanceIndicators.brakes.color === 'amber' ? 'bg-amber-100 text-amber-700' :
+                                      'bg-rose-100 text-rose-700'
+                                    }`}
+                                    title={`Trailer/Brakes: ${tour.maintenanceIndicators.brakes.remainingKm.toLocaleString()} km remaining`}
+                                  >
+                                    TR
+                                  </div>
+                                )}
+                              </>
+                            )}
+                            {/* Fallback to old indicators if maintenanceIndicators not available */}
+                            {!tour.maintenanceIndicators && tour.serviceIndicator && (
                               <div 
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
+                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${
                                   tour.serviceIndicator.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
                                   tour.serviceIndicator.color === 'amber' ? 'bg-amber-100 text-amber-700' :
                                   'bg-rose-100 text-rose-700'
@@ -576,19 +634,6 @@ const Tours: React.FC = () => {
                                 title={`Service: ${tour.serviceIndicator.remainingKm.toLocaleString()} km remaining`}
                               >
                                 S
-                              </div>
-                            )}
-                            {/* Brake Indicator */}
-                            {tour.brakeIndicator && (
-                              <div 
-                                className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black ${
-                                  tour.brakeIndicator.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
-                                  tour.brakeIndicator.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                                  'bg-rose-100 text-rose-700'
-                                }`}
-                                title={`Brakes: ${tour.brakeIndicator.remainingKm.toLocaleString()} km remaining`}
-                              >
-                                B
                               </div>
                             )}
                           </div>

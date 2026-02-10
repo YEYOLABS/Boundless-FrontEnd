@@ -131,6 +131,29 @@ export interface Tour {
   notes?: string;
   createdAt?: string;
   createdBy?: string;
+  maintenanceIndicators?: {
+    tyres: {
+      color: 'green' | 'amber' | 'red';
+      remainingKm: number;
+      cumulativeKm: number;
+    };
+    wheels: {
+      color: 'green' | 'amber' | 'red';
+      remainingKm: number;
+      cumulativeKm: number;
+    };
+    service: {
+      color: 'green' | 'amber' | 'red';
+      remainingKm: number;
+      cumulativeKm: number;
+    };
+    brakes: {
+      color: 'green' | 'amber' | 'red';
+      remainingKm: number;
+      cumulativeKm: number;
+    };
+  };
+  // Backward compatibility
   serviceIndicator?: {
     color: 'green' | 'amber' | 'red';
     remainingKm: number;
