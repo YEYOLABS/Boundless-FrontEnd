@@ -67,7 +67,7 @@ const TourDetail: React.FC = () => {
         setResolvedVehicleName(vName);
         setResolvedDriverName(dName);
       }
-      
+
       // Sort vehicles by sortOrder
       const sortedVehicles = (vehiclesData as Vehicle[]).sort((a, b) => {
         const orderA = a.sortOrder ?? Number.MAX_SAFE_INTEGER;
@@ -230,9 +230,9 @@ const TourDetail: React.FC = () => {
             assignedByName: user?.username,
           });
         }
-        // Refresh data
-        fetchData();
+        // Refresh data and navigate back to tours page
         showNotification('Vehicle assigned successfully.', 'success');
+        navigate('/tours');
       } catch (err) {
         showNotification('Failed to assign vehicle: ' + err, 'error');
         // Revert optimistic changes
