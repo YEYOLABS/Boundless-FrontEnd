@@ -277,7 +277,7 @@ const Vehicles: React.FC = () => {
               >
                 {/* Vehicle details left side */}
                 <div
-                  className="flex-1 cursor-pointer bg-slate-50 rounded-2xl p-6 hover:bg-slate-100 transition-colors border border-indigo-100 relative max-w-2xl"
+                  className="w-full md:w-80 cursor-pointer bg-slate-50 rounded-2xl p-6 hover:bg-slate-100 transition-colors border border-indigo-100 relative shrink-0"
                   onClick={() => navigate(`/vehicles/${v.id}`)}
 
                 >
@@ -365,7 +365,7 @@ const Vehicles: React.FC = () => {
                 </div>
 
                 {/* Tours right side */}
-                <div className="mt-6 md:mt-0 md:ml-8 flex flex-col justify-center">
+                <div className="mt-6 md:mt-0 md:ml-8 flex-1 flex flex-col justify-center min-w-0">
                   <div className="flex gap-4 overflow-x-auto pb-2">
                     {vehicleTours.length > 0 ? (
                       vehicleTours.map((tour) => (
