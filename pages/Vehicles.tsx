@@ -366,7 +366,7 @@ const Vehicles: React.FC = () => {
 
                 {/* Tours right side */}
                 <div className="mt-6 md:mt-0 md:ml-8 flex flex-col justify-center">
-                  <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex gap-4 overflow-x-auto pb-2">
                     {vehicleTours.length > 0 ? (
                       vehicleTours.map((tour) => (
                         <div
@@ -443,9 +443,9 @@ const Vehicles: React.FC = () => {
                       </div>
                     )}
                   </div>
-                  {vehicleTours.length > 2 && (
+                  {vehicleTours.length > 5 && (
                     <p className="text-[10px] text-slate-400 text-center mt-2">
-                      +{vehicleTours.length - 2} more tours
+                      +{vehicleTours.length - 5} more tours
                     </p>
                   )}
                 </div>
