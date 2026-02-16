@@ -173,10 +173,8 @@ const Vehicles: React.FC = () => {
 
   // Helper to format date in South African format (DD/MM/YYYY)
   const formatDateSA = (dateStr: string) => {
-    const date = new Date(dateStr);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
+    // Parse the date string directly without timezone conversion
+    const [year, month, day] = dateStr.split('T')[0].split('-');
     return `${day}/${month}/${year}`;
   };
 
@@ -268,7 +266,10 @@ const Vehicles: React.FC = () => {
             (v.licenceNumber || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
             (v.model || '').toLowerCase().includes(searchQuery.toLowerCase())
           ).map((v) => {
-            const vehicleTours = tours?.filter(t => t.vehicleId === v.id).slice(0, 2) || [];
+            const vehicleTours = tours
+              ?.filter(t => t.vehicleId === v.id)
+              .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()) // Most recent first
+              .slice(0, 5) || []; // Show up to 5 tours
             return (
               <div
                 key={v.id}
