@@ -89,21 +89,40 @@ const Tours: React.FC = () => {
     return d?.name || 'Unassigned Operator';
   };
 
+  // Helper to add one day to a date string (YYYY-MM-DD format)
+  const addOneDay = (dateStr: string): string => {
+    if (!dateStr) return dateStr;
+    const date = new Date(dateStr + 'T00:00:00'); // Add time to avoid timezone issues
+    date.setDate(date.getDate() + 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
   const flexibleParseDate = (value: any): string => {
     if (!value) return '';
+
+    // Helper to format date as YYYY-MM-DD in local timezone
+    const formatLocalDate = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
 
     // Handle Excel serial numbers or Numbers
     if (typeof value === 'number') {
       // Excel dates are days since 1899-12-30
       const date = new Date((value - 25569) * 86400 * 1000);
-      if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
+      if (!isNaN(date.getTime())) return formatLocalDate(date);
       return '';
     }
 
     // Handle JS Date objects
     if (value instanceof Date) {
       if (isNaN(value.getTime())) return '';
-      return value.toISOString().split('T')[0];
+      return formatLocalDate(value);
     }
 
     if (typeof value !== 'string') return '';
@@ -115,7 +134,7 @@ const Tours: React.FC = () => {
 
     // Try native Date.parse
     const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
+    if (!isNaN(d.getTime())) return formatLocalDate(d);
 
     // Fallback for DD/MMM/YYYY or DD/MM/YYYY (common in SA)
     const parts = dateStr.split(/[-/]/);
@@ -403,7 +422,8 @@ const Tours: React.FC = () => {
   };
 
   const calculateTourDates = (tour: Tour) => {
-    let startDate = tour.startDate;
+    // Add +1 day to ALL tour start dates (tour reference date is one day before actual start)
+    let startDate = addOneDay(tour.startDate);
     let endDate = tour.endDate;
     let tourName = tour.tour_name;
 
@@ -419,21 +439,30 @@ const Tours: React.FC = () => {
       // Assume ZAAD is previous tour, but since static, perhaps check if startDate is after some date
       // For simplicity, if endDate not set, add 8 days and append North
       if (!endDate) {
-        const start = new Date(startDate);
+        const start = new Date(startDate + 'T00:00:00');
         start.setDate(start.getDate() + 8);
-        endDate = start.toISOString().split('T')[0];
+        endDate = addOneDay(start.toISOString().split('T')[0]);
         tourName += ' North';
+      } else {
+        endDate = addOneDay(endDate);
       }
     }
 
     // Addo logic: start +1, end +6, becomes Addo North if end not provided
     if (tourName.toUpperCase().includes('ADDO')) {
       if (!endDate) {
-        const start = new Date(startDate);
+        const start = new Date(startDate + 'T00:00:00');
         start.setDate(start.getDate() + 6);
-        endDate = start.toISOString().split('T')[0];
+        endDate = addOneDay(start.toISOString().split('T')[0]);
         tourName += ' North';
+      } else {
+        endDate = addOneDay(endDate);
       }
+    }
+
+    // Add +1 day to end date if it exists
+    if (endDate && !tourName.toUpperCase().includes('RAINBOW') && !tourName.toUpperCase().includes('ADDO')) {
+      endDate = addOneDay(endDate);
     }
 
     return { ...tour, startDate, endDate, tour_name: tourName };
