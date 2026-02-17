@@ -40,6 +40,53 @@ const TourDetail: React.FC = () => {
 
   const canWrite = user?.role === 'owner' || user?.role === 'tour_manager';
 
+  // Helper to add one day to a date string (YYYY-MM-DD format)
+  const addOneDay = (dateStr: string): string => {
+    if (!dateStr) return dateStr;
+    const date = new Date(dateStr + 'T00:00:00'); // Add time to avoid timezone issues
+    date.setDate(date.getDate() + 1);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Helper to format date for display (adds +1 day to match tour reference)
+  const formatTourDate = (dateStr: string): string => {
+    if (!dateStr) return 'N/A';
+    const adjustedDate = addOneDay(dateStr);
+    return new Date(adjustedDate + 'T00:00:00').toLocaleDateString();
+  };
+
+  // Helper to format tour names (replace codes with proper names)
+  const formatTourName = (name: string) => {
+    if (!name) return name;
+    let displayName = name;
+
+    // Map of tour codes to proper names
+    const tourCodeMap: { [key: string]: string } = {
+      'ZAPAN': 'Panorama',
+      'ZAKRU': 'Kruger',
+      'ZAAD': 'Addo North',
+      'ZAADS': 'Addo South',
+      'ZAOUT': 'Outeniqua',
+      'ZARAI': 'Rainbow North',
+      'ZARAIS': 'Rainbow South',
+      'GOLF': 'Golf Tour',
+      'GARDEN': 'Garden Route',
+      'CAPE': 'Cape Town',
+      'WINELANDS': 'Winelands'
+    };
+
+    // Replace any tour codes with proper names
+    Object.entries(tourCodeMap).forEach(([code, properName]) => {
+      const regex = new RegExp(`\\b${code}\\b`, 'gi');
+      displayName = displayName.replace(regex, properName);
+    });
+
+    return displayName;
+  };
+
   const fetchData = async () => {
     if (!id) return;
     setLoading(true);
@@ -277,7 +324,7 @@ const TourDetail: React.FC = () => {
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-slate-800">{tour?.tour_reference}</h2>
+                <h2 className="text-2xl font-bold text-slate-800">{formatTourName(tour?.tour_reference)}</h2>
                 {/**<StatusBadge status={tour.status} /> */}
               </div>
               {/**<p className="text-slate-500 text-sm mt-1 uppercase font-black tracking-widest">Tour Registry: {tour?.tour_reference}</p> */}
@@ -380,11 +427,11 @@ const TourDetail: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center gap-3 text-slate-600">
                       <Calendar size={18} className="text-slate-400" />
-                      <span className="text-sm">Starts: <b className="text-slate-800">{new Date(tour.startDate).toLocaleDateString()}</b></span>
+                      <span className="text-sm">Starts: <b className="text-slate-800">{formatTourDate(tour.startDate)}</b></span>
                     </div>
                     <div className="flex items-center gap-3 text-slate-600">
                       <Calendar size={18} className="text-slate-400" />
-                      <span className="text-sm">Ends: <b className="text-slate-800">{new Date(tour.endDate).toLocaleDateString()}</b></span>
+                      <span className="text-sm">Ends: <b className="text-slate-800">{formatTourDate(tour.endDate)}</b></span>
                     </div>
                   </div>
                 </div>
