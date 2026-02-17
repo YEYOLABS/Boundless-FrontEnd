@@ -89,40 +89,21 @@ const Tours: React.FC = () => {
     return d?.name || 'Unassigned Operator';
   };
 
-  // Helper to add one day to a date string (YYYY-MM-DD format)
-  const addOneDay = (dateStr: string): string => {
-    if (!dateStr) return dateStr;
-    const date = new Date(dateStr + 'T00:00:00'); // Add time to avoid timezone issues
-    date.setDate(date.getDate() + 1);
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  };
-
   const flexibleParseDate = (value: any): string => {
     if (!value) return '';
-
-    // Helper to format date as YYYY-MM-DD in local timezone
-    const formatLocalDate = (date: Date): string => {
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      return `${year}-${month}-${day}`;
-    };
 
     // Handle Excel serial numbers or Numbers
     if (typeof value === 'number') {
       // Excel dates are days since 1899-12-30
       const date = new Date((value - 25569) * 86400 * 1000);
-      if (!isNaN(date.getTime())) return formatLocalDate(date);
+      if (!isNaN(date.getTime())) return date.toISOString().split('T')[0];
       return '';
     }
 
     // Handle JS Date objects
     if (value instanceof Date) {
       if (isNaN(value.getTime())) return '';
-      return formatLocalDate(value);
+      return value.toISOString().split('T')[0];
     }
 
     if (typeof value !== 'string') return '';
@@ -134,7 +115,7 @@ const Tours: React.FC = () => {
 
     // Try native Date.parse
     const d = new Date(dateStr);
-    if (!isNaN(d.getTime())) return formatLocalDate(d);
+    if (!isNaN(d.getTime())) return d.toISOString().split('T')[0];
 
     // Fallback for DD/MMM/YYYY or DD/MM/YYYY (common in SA)
     const parts = dateStr.split(/[-/]/);
@@ -380,14 +361,49 @@ const Tours: React.FC = () => {
   };
 
   const formatTourName = (name: string) => {
-    if (!name) return name;
-    // Only replace the word "Kruger" with "Panorama", keep codes like ZAKRU as-is
-    return name.replace(/\bKruger\b/gi, 'Panorama');
+    // Replace tour codes with proper names
+    let displayName = name;
+
+    // Map of tour codes to proper names
+    const tourCodeMap: { [key: string]: string } = {
+      'ZAPAN': 'Panorama',
+      'ZAKRU': 'Kruger',
+      'ZAAD': 'Addo North',
+      'ZAADS': 'Addo South',
+      'ZAOUT': 'Outeniqua',
+      'ZARAI': 'Rainbow North',
+      'ZARAIS': 'Rainbow South',
+      'GOLF': 'Golf Tour',
+      'GARDEN': 'Garden Route',
+      'CAPE': 'Cape Town',
+      'WINELANDS': 'Winelands'
+    };
+
+    // Replace any tour codes with proper names
+    Object.entries(tourCodeMap).forEach(([code, properName]) => {
+      const regex = new RegExp(`\\b${code}\\b`, 'gi');
+      displayName = displayName.replace(regex, properName);
+    });
+
+    // Check for various dash types: hyphen, en-dash, em-dash
+    const separatorRegex = / [-–—] /;
+    const match = displayName.match(separatorRegex);
+
+    if (!match) return displayName;
+
+    // Split by the found separator
+    const parts = displayName.split(match[0]).map(part => part.trim());
+
+    if (parts.length >= 2) {
+      const [first, second, ...rest] = parts;
+      // Reconstruct using standard hyphen for consistency
+      return `${second} - ${first} ${rest.length > 0 ? '- ' + rest.join(' - ') : ''}`;
+    }
+    return displayName;
   };
 
   const calculateTourDates = (tour: Tour) => {
-    // Add +1 day to ALL tour start dates (tour reference date is one day before actual start)
-    let startDate = addOneDay(tour.startDate);
+    let startDate = tour.startDate;
     let endDate = tour.endDate;
     let tourName = tour.tour_name;
 
@@ -403,30 +419,21 @@ const Tours: React.FC = () => {
       // Assume ZAAD is previous tour, but since static, perhaps check if startDate is after some date
       // For simplicity, if endDate not set, add 8 days and append North
       if (!endDate) {
-        const start = new Date(startDate + 'T00:00:00');
+        const start = new Date(startDate);
         start.setDate(start.getDate() + 8);
-        endDate = addOneDay(start.toISOString().split('T')[0]);
+        endDate = start.toISOString().split('T')[0];
         tourName += ' North';
-      } else {
-        endDate = addOneDay(endDate);
       }
     }
 
     // Addo logic: start +1, end +6, becomes Addo North if end not provided
     if (tourName.toUpperCase().includes('ADDO')) {
       if (!endDate) {
-        const start = new Date(startDate + 'T00:00:00');
+        const start = new Date(startDate);
         start.setDate(start.getDate() + 6);
-        endDate = addOneDay(start.toISOString().split('T')[0]);
+        endDate = start.toISOString().split('T')[0];
         tourName += ' North';
-      } else {
-        endDate = addOneDay(endDate);
       }
-    }
-
-    // Add +1 day to end date if it exists
-    if (endDate && !tourName.toUpperCase().includes('RAINBOW') && !tourName.toUpperCase().includes('ADDO')) {
-      endDate = addOneDay(endDate);
     }
 
     return { ...tour, startDate, endDate, tour_name: tourName };
@@ -670,7 +677,7 @@ const Tours: React.FC = () => {
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
                           <div className="flex items-center gap-2">
                             <Globe size={12} className="text-sky-500" />
-                            <span className="text-xs font-black text-slate-700 truncate">{tour.itinerary || 'Panorama Region'}</span>
+                            <span className="text-xs font-black text-slate-700 truncate">{tour.itinerary || 'Kruger Region'}</span>
                           </div>
                         </div> */}
                           <div className="space-y-1">
