@@ -398,10 +398,11 @@ const Tours: React.FC = () => {
       'WINELANDS': 'Winelands'
     };
 
-    // Replace any tour codes with proper names
+    // Replace any tour codes with proper names (case insensitive, at start of string or after space)
     Object.entries(tourCodeMap).forEach(([code, properName]) => {
-      const regex = new RegExp(`\\b${code}\\b`, 'gi');
-      displayName = displayName.replace(regex, properName);
+      // Match code at start of string or after whitespace, followed by non-letter character or end
+      const regex = new RegExp(`(^|\\s)(${code})(?=[^a-zA-Z]|$)`, 'gi');
+      displayName = displayName.replace(regex, `$1${properName}`);
     });
 
     // Check for various dash types: hyphen, en-dash, em-dash
