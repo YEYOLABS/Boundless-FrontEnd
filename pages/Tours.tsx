@@ -380,46 +380,8 @@ const Tours: React.FC = () => {
   };
 
   const formatTourName = (name: string) => {
-    // Replace tour codes with proper names
-    let displayName = name;
-
-    // Map of tour codes to proper names
-    const tourCodeMap: { [key: string]: string } = {
-      'ZAPAN': 'Panorama',
-      'ZAKRU': 'Panorama',
-      'ZAAD': 'Addo North',
-      'ZAADS': 'Addo South',
-      'ZAOUT': 'Outeniqua',
-      'ZARAI': 'Rainbow North',
-      'ZARAIS': 'Rainbow South',
-      'GOLF': 'Golf Tour',
-      'GARDEN': 'Garden Route',
-      'CAPE': 'Cape Town',
-      'WINELANDS': 'Winelands'
-    };
-
-    // Replace any tour codes with proper names (case insensitive, at start of string or after space)
-    Object.entries(tourCodeMap).forEach(([code, properName]) => {
-      // Match code at start of string or after whitespace, followed by non-letter character or end
-      const regex = new RegExp(`(^|\\s)(${code})(?=[^a-zA-Z]|$)`, 'gi');
-      displayName = displayName.replace(regex, `$1${properName}`);
-    });
-
-    // Check for various dash types: hyphen, en-dash, em-dash
-    const separatorRegex = / [-–—] /;
-    const match = displayName.match(separatorRegex);
-
-    if (!match) return displayName;
-
-    // Split by the found separator
-    const parts = displayName.split(match[0]).map(part => part.trim());
-
-    if (parts.length >= 2) {
-      const [first, second, ...rest] = parts;
-      // Reconstruct using standard hyphen for consistency
-      return `${second} - ${first} ${rest.length > 0 ? '- ' + rest.join(' - ') : ''}`;
-    }
-    return displayName;
+    // Return the tour name as stored in the database without transformation
+    return name;
   };
 
   const calculateTourDates = (tour: Tour) => {
@@ -707,7 +669,7 @@ const Tours: React.FC = () => {
                           <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Destination</p>
                           <div className="flex items-center gap-2">
                             <Globe size={12} className="text-sky-500" />
-                            <span className="text-xs font-black text-slate-700 truncate">{tour.itinerary || 'Kruger Region'}</span>
+                            <span className="text-xs font-black text-slate-700 truncate">{tour.itinerary || 'Panorama Region'}</span>
                           </div>
                         </div> */}
                           <div className="space-y-1">
