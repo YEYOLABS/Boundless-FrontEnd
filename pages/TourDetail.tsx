@@ -58,34 +58,11 @@ const TourDetail: React.FC = () => {
     return new Date(adjustedDate + 'T00:00:00').toLocaleDateString();
   };
 
-  // Helper to format tour names (replace codes with proper names)
+  // Helper to format tour names (return as-is from database)
   const formatTourName = (name: string) => {
     if (!name) return name;
-    let displayName = name;
-
-    // Map of tour codes to proper names
-    const tourCodeMap: { [key: string]: string } = {
-      'ZAPAN': 'Panorama',
-      'ZAKRU': 'Panorama',
-      'ZAAD': 'Addo North',
-      'ZAADS': 'Addo South',
-      'ZAOUT': 'Outeniqua',
-      'ZARAI': 'Rainbow North',
-      'ZARAIS': 'Rainbow South',
-      'GOLF': 'Golf Tour',
-      'GARDEN': 'Garden Route',
-      'CAPE': 'Cape Town',
-      'WINELANDS': 'Winelands'
-    };
-
-    // Replace any tour codes with proper names (case insensitive, at start of string or after space)
-    Object.entries(tourCodeMap).forEach(([code, properName]) => {
-      // Match code at start of string or after whitespace, followed by non-letter character or end
-      const regex = new RegExp(`(^|\\s)(${code})(?=[^a-zA-Z]|$)`, 'gi');
-      displayName = displayName.replace(regex, `$1${properName}`);
-    });
-
-    return displayName;
+    // Return the tour name as stored in the database without transformation
+    return name;
   };
 
   const fetchData = async () => {
