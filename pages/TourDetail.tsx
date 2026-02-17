@@ -66,7 +66,7 @@ const TourDetail: React.FC = () => {
     // Map of tour codes to proper names
     const tourCodeMap: { [key: string]: string } = {
       'ZAPAN': 'Panorama',
-      'ZAKRU': 'Kruger',
+      'ZAKRU': 'Panorama',
       'ZAAD': 'Addo North',
       'ZAADS': 'Addo South',
       'ZAOUT': 'Outeniqua',
