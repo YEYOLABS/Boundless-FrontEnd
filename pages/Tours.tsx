@@ -380,8 +380,9 @@ const Tours: React.FC = () => {
   };
 
   const formatTourName = (name: string) => {
-    // Return the tour name as stored in the database without transformation
-    return name;
+    if (!name) return name;
+    // Only replace the word "Kruger" with "Panorama", keep codes like ZAKRU as-is
+    return name.replace(/\bKruger\b/gi, 'Panorama');
   };
 
   const calculateTourDates = (tour: Tour) => {

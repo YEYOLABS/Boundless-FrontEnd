@@ -58,11 +58,11 @@ const TourDetail: React.FC = () => {
     return new Date(adjustedDate + 'T00:00:00').toLocaleDateString();
   };
 
-  // Helper to format tour names (return as-is from database)
+  // Helper to format tour names (replace Kruger with Panorama)
   const formatTourName = (name: string) => {
     if (!name) return name;
-    // Return the tour name as stored in the database without transformation
-    return name;
+    // Only replace the word "Kruger" with "Panorama", keep codes like ZAKRU as-is
+    return name.replace(/\bKruger\b/gi, 'Panorama');
   };
 
   const fetchData = async () => {
