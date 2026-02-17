@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Tour, TourStatus, Vehicle, Driver, Float } from '../types';
 import StatusBadge from '../components/StatusBadge';
-import MaintenanceModal from '../components/MaintenanceModal';
 import {
   Plus, X, Upload, Check, FileText, Calendar,
   MapPin, Truck, User, Globe, Hash, Info, Briefcase, Search, Filter, Wallet, CheckCircle,
@@ -30,12 +29,6 @@ const Tours: React.FC = () => {
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isConfirmedToursModalOpen, setIsConfirmedToursModalOpen] = useState(false);
-  const [isMaintenanceModalOpen, setIsMaintenanceModalOpen] = useState(false);
-  const [selectedMaintenance, setSelectedMaintenance] = useState<{
-    vehiclePlate: string;
-    type: 'tyres' | 'wheels' | 'service' | 'brakes';
-    data: any;
-  } | null>(null);
   const [importStatus, setImportStatus] = useState<{ valid: number, total: number, data: any[] } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -308,6 +301,12 @@ const Tours: React.FC = () => {
   };
 
   const statusGroups = [
+    {
+      id: 'Confirmed',
+      label: 'Confirmed Tours',
+      color: 'bg-emerald-500',
+      filter: (t: Tour) => (t.status === TourStatus.CONFIRMED || t.status === TourStatus.ACTIVE) && (t.vehicleId || t.driverId)
+    },
     // Confirmed tours now only show on whiteboard, not on assign board
     // {
     //   id: 'Confirmed',
@@ -361,45 +360,21 @@ const Tours: React.FC = () => {
   };
 
   const formatTourName = (name: string) => {
-    // Replace tour codes with proper names
-    let displayName = name;
-
-    // Map of tour codes to proper names
-    const tourCodeMap: { [key: string]: string } = {
-      'ZAPAN': 'Panorama',
-      'ZAKRU': 'Kruger',
-      'ZAAD': 'Addo North',
-      'ZAADS': 'Addo South',
-      'ZAOUT': 'Outeniqua',
-      'ZARAI': 'Rainbow North',
-      'ZARAIS': 'Rainbow South',
-      'GOLF': 'Golf Tour',
-      'GARDEN': 'Garden Route',
-      'CAPE': 'Cape Town',
-      'WINELANDS': 'Winelands'
-    };
-
-    // Replace any tour codes with proper names
-    Object.entries(tourCodeMap).forEach(([code, properName]) => {
-      const regex = new RegExp(`\\b${code}\\b`, 'gi');
-      displayName = displayName.replace(regex, properName);
-    });
-
     // Check for various dash types: hyphen, en-dash, em-dash
     const separatorRegex = / [-–—] /;
-    const match = displayName.match(separatorRegex);
+    const match = name.match(separatorRegex);
 
-    if (!match) return displayName;
+    if (!match) return name;
 
     // Split by the found separator
-    const parts = displayName.split(match[0]).map(part => part.trim());
+    const parts = name.split(match[0]).map(part => part.trim());
 
     if (parts.length >= 2) {
       const [first, second, ...rest] = parts;
       // Reconstruct using standard hyphen for consistency
       return `${second} - ${first} ${rest.length > 0 ? '- ' + rest.join(' - ') : ''}`;
     }
-    return displayName;
+    return name;
   };
 
   const calculateTourDates = (tour: Tour) => {
@@ -501,13 +476,13 @@ const Tours: React.FC = () => {
             />
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Search Tours</label>
+            <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Tour Name</label>
             <input
               type="text"
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all font-medium text-slate-800"
-              placeholder="Search by tour name or reference..."
+              placeholder="Search by tour name..."
             />
           </div>
         </div>
@@ -556,9 +531,7 @@ const Tours: React.FC = () => {
             const matchesGroup = group.filter(t);
             const matchesDateRange = showAllTours || isWithinNext2Months(t.startDate);
             const matchesSearch = isWithinSearchRange(t.startDate);
-            const matchesTourName = searchTerm === '' ||
-              t.tour_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              t.tour_reference.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesTourName = searchTerm === '' || t.tour_name.toLowerCase().includes(searchTerm.toLowerCase());
             const notCancelled = t.status !== TourStatus.CANCELLED;
 
             return matchesGroup && matchesDateRange && matchesSearch && matchesTourName && notCancelled;
@@ -584,7 +557,6 @@ const Tours: React.FC = () => {
               <div className="flex flex-wrap gap-6">
                 {groupTours.map(tour => {
                   const adjustedTour = calculateTourDates(tour);
-
                   return (
                     <div
                       key={tour.id}
@@ -597,72 +569,11 @@ const Tours: React.FC = () => {
                             <Hash size={12} />
                             {formatTourName(adjustedTour.tour_name)}
                           </div>
-                          <div className="flex items-center gap-2">
-                            <StatusBadge status={tour?.status} />
-                            {/* Maintenance Indicators: T (Tyres), W (Wheels), S (Service), B (Brakes) */}
-                            {tour.maintenanceIndicators && (
-                              <>
-                                {/* Tyres Indicator */}
-                                <div
-                                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${tour.maintenanceIndicators.tyres.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
-                                    tour.maintenanceIndicators.tyres.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                                      'bg-rose-100 text-rose-700'
-                                    }`}
-                                  title={`Tyres: ${tour.maintenanceIndicators.tyres.remainingKm.toLocaleString()} km remaining`}
-                                >
-                                  T
-                                </div>
-                                {/* Wheels Indicator */}
-                                <div
-                                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${tour.maintenanceIndicators.wheels.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
-                                    tour.maintenanceIndicators.wheels.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                                      'bg-rose-100 text-rose-700'
-                                    }`}
-                                  title={`Wheels (Alignment/Balancing): ${tour.maintenanceIndicators.wheels.remainingKm.toLocaleString()} km remaining`}
-                                >
-                                  W
-                                </div>
-                                {/* Service Indicator */}
-                                <div
-                                  className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${tour.maintenanceIndicators.service.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
-                                    tour.maintenanceIndicators.service.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                                      'bg-rose-100 text-rose-700'
-                                    }`}
-                                  title={`Service: ${tour.maintenanceIndicators.service.remainingKm.toLocaleString()} km remaining`}
-                                >
-                                  S
-                                </div>
-                                {/* Brakes Indicator - Only show if trailer required */}
-                                {tour.trailer_required && (
-                                  <div
-                                    className={`w-7 h-7 rounded-lg flex items-center justify-center text-[9px] font-black ${tour.maintenanceIndicators.brakes.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
-                                      tour.maintenanceIndicators.brakes.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                                        'bg-rose-100 text-rose-700'
-                                      }`}
-                                    title={`Trailer/Brakes: ${tour.maintenanceIndicators.brakes.remainingKm.toLocaleString()} km remaining`}
-                                  >
-                                    TR
-                                  </div>
-                                )}
-                              </>
-                            )}
-                            {/* Fallback to old indicators if maintenanceIndicators not available */}
-                            {!tour.maintenanceIndicators && tour.serviceIndicator && (
-                              <div
-                                className={`w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-black ${tour.serviceIndicator.color === 'green' ? 'bg-emerald-100 text-emerald-700' :
-                                  tour.serviceIndicator.color === 'amber' ? 'bg-amber-100 text-amber-700' :
-                                    'bg-rose-100 text-rose-700'
-                                  }`}
-                                title={`Service: ${tour.serviceIndicator.remainingKm.toLocaleString()} km remaining`}
-                              >
-                                S
-                              </div>
-                            )}
-                          </div>
+                          <StatusBadge status={tour?.status} />
                         </div>
 
                         <div className="space-y-1">
-                          <h3 className="font-black text-lg text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">{formatTourName(tour.tour_reference)}</h3>
+                          <h3 className="font-black text-lg text-slate-800 leading-tight group-hover:text-indigo-600 transition-colors line-clamp-2">{tour.tour_reference}</h3>
                         </div>
 
                         <div className="grid grid-cols-1 gap-3 py-4 border-y border-slate-50">
@@ -771,17 +682,6 @@ const Tours: React.FC = () => {
                       onChange={e => setNewTour({ ...newTour, pax: e.target.value ? parseInt(e.target.value) : 0 })}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-800"
                       placeholder="Number of passengers"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estimated Kilometers</label>
-                    <input
-                      type="number"
-                      min="0"
-                      value={newTour.estimated_km || ''}
-                      onChange={e => setNewTour({ ...newTour, estimated_km: e.target.value ? parseInt(e.target.value) : 0 })}
-                      className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-600 transition-all font-bold text-slate-800"
-                      placeholder="e.g. 3500"
                     />
                   </div>
                 </div>
